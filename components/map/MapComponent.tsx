@@ -626,6 +626,7 @@ const MapComponent = () => {
     });
 
     setMarkerInstances(newMarkerInstancesState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isLeafletLoaded,
     processedPlaces, // Primary driver
