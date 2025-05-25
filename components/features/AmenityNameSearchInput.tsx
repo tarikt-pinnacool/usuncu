@@ -1,7 +1,7 @@
 // components/features/AmenityNameSearchInput.tsx
 "use client";
 
-import React, { useState, useEffect, useRef } from "react"; // Added useRef
+import React, { useState, useEffect, useRef } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
@@ -14,16 +14,19 @@ export function AmenityNameSearchInput() {
     (state) => state.setAmenityNameQuery
   );
 
-  // Local state for the input field's value, for responsive typing
+  // Local state for the input field's value.
+  // Initialize with the global value.
   const [localQuery, setLocalQuery] = useState(globalAmenityNameQuery);
 
-  // Ref to track if the change to localQuery originated from an external globalQuery update
-  // This helps prevent the debounced function from firing when we're just syncing.
-  const isSyncingRef = useRef(false);
+  // Ref to signal if the next globalAmenityNameQuery update is from *this* component's debounce.
+  // This prevents the useEffect from immediately reverting local state during active typing.
+  const isInternalUpdateRef = useRef(false);
 
+  // Debounced function to update the global store.
+  // It sets the flag *before* dispatching the global update.
   const debouncedSetGlobalQuery = useDebouncedCallback(
     (query: string) => {
-      // ("AmenityNameSearchInput: Debounced - Setting global query to:", query);
+      isInternalUpdateRef.current = true; // Mark that this update originates from here
       setGlobalAmenityNameQuery(query);
     },
     300 // 300ms debounce
@@ -31,36 +34,48 @@ export function AmenityNameSearchInput() {
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = event.target.value;
-    // ("AmenityNameSearchInput: Input changed (local):", newQuery);
     setLocalQuery(newQuery); // Update local state immediately for responsive input
-
-    // Ensure we don't trigger debounce if this change was due to syncing from global
-    if (!isSyncingRef.current) {
-      debouncedSetGlobalQuery(newQuery); // Debounce update to global store
-    }
-    // Reset the flag after handling input, as the next input will be user-driven
-    isSyncingRef.current = false;
+    debouncedSetGlobalQuery(newQuery); // Schedule global state update via debounce
   };
 
   const handleClearSearch = () => {
-    // ("AmenityNameSearchInput: Clearing search");
     setLocalQuery(""); // Clear local state immediately
     debouncedSetGlobalQuery.cancel(); // Cancel any pending debounced calls
-    setGlobalAmenityNameQuery(""); // Update global store immediately
+    setGlobalAmenityNameQuery(""); // Update global store immediately (this is an immediate, intentional action)
+    // No need to set isInternalUpdateRef.current = true here, as the direct global update
+    // will be caught by the useEffect's check (globalAmenityNameQuery !== localQuery)
+    // and correctly reset localQuery, but it won't be prevented by the flag.
+    // If the clear button is meant to be the *only* external way to reset, then maybe.
+    // But for simplicity, let it pass through.
   };
 
-  // Effect to sync localQuery if globalAmenityNameQuery changes externally
+  // Effect to sync localQuery if globalAmenityNameQuery changes
+  // This effect should only react to changes in `globalAmenityNameQuery`.
   useEffect(() => {
-    // If the global query changes (and it's different from local input),
-    // update the local input's value.
+    // Check if the global query is different from the current local input.
+    // And ensure this change *did not* originate from our own debounced update.
     if (globalAmenityNameQuery !== localQuery) {
-      // ("AmenityNameSearchInput: Syncing localQuery from global:", globalAmenityNameQuery);
-      isSyncingRef.current = true; // Set flag to prevent debounced call from this update
-      setLocalQuery(globalAmenityNameQuery);
-      // The flag will be reset in handleInputChange, or we can reset it in another effect if needed,
-      // but for typing, handleInputChange resetting it is usually fine.
+      if (!isInternalUpdateRef.current) {
+        // If it's an external change, update local state and cancel any pending debounced calls.
+        setLocalQuery(globalAmenityNameQuery);
+        debouncedSetGlobalQuery.cancel();
+      }
     }
-  }, [globalAmenityNameQuery, localQuery]);
+    // IMPORTANT: Reset the flag after the effect runs.
+    // This prepares it for the *next* internal debounced update.
+    isInternalUpdateRef.current = false;
+  }, [globalAmenityNameQuery, debouncedSetGlobalQuery]); // Crucially, `localQuery` is NOT a dependency here.
+
+  // The `useState` initialization ensures that `localQuery` is correctly set
+  // when the component first mounts, reflecting the initial global state.
+  useEffect(() => {
+    // This effect runs only once on mount to ensure localQuery matches initial global query.
+    // It also handles cases where globalAmenityNameQuery might change *before* the component mounts
+    // or very early in its lifecycle.
+    if (localQuery !== globalAmenityNameQuery) {
+      setLocalQuery(globalAmenityNameQuery);
+    }
+  }, [globalAmenityNameQuery]); // Run this effect when globalAmenityNameQuery changes to sync initial state.
 
   return (
     <div className="relative w-full sm:max-w-xs">

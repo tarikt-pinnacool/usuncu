@@ -1,38 +1,37 @@
 // components/features/FilterPanelSheet.tsx
 "use client";
 
-import { useState, useMemo } from "react"; // Added useMemo
+import { useState, useMemo } from "react";
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-  SheetClose, // Will use this for list items
+  SheetClose,
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { SlidersHorizontal, X, MapPin, Sun, Moon, Star } from "lucide-react"; // Added icons for list
+import { SlidersHorizontal, X, MapPin, Sun, Moon, Star } from "lucide-react";
 import { AmenityNameSearchInput } from "./AmenityNameSearchInput";
 import { FilterControls } from "./FilterControls";
 import { useAppStore } from "@/store/appStore";
 import { Place } from "@/lib/types";
-import { ScrollArea } from "@/components/ui/scroll-area"; // For a scrollable list
-import { Badge } from "@/components/ui/badge"; // To show sun/shade status
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
 
 export function FilterPanelSheet() {
   const [isOpen, setIsOpen] = useState(false);
   const {
-    processedPlaces, // All places currently processed with sun/shade status
+    processedPlaces,
     sunShadeFilter,
     amenityNameQuery,
-    setSelectedPlaceDetail, // To open detail sheet from list item
-    setIsBookmarkSheetOpen, // To close other sheets
-    mapRef, // To pan to the place
-    bookmarks, // To show if a place in the list is bookmarked
+    setSelectedPlaceDetail,
+    setIsBookmarkSheetOpen,
+    mapRef,
+    bookmarks,
   } = useAppStore();
 
-  // Memoize the derived list of places to display in the sheet
   const placesToList = useMemo(() => {
     const nameQueryLower = amenityNameQuery.toLowerCase().trim();
 
@@ -45,7 +44,7 @@ export function FilterPanelSheet() {
           passesSunShadeFilter =
             sunShadeFilter === "sun" ? place.isInSun : !place.isInSun;
         } else {
-          passesSunShadeFilter = false; // If status unknown and filter is specific
+          passesSunShadeFilter = false;
         }
         if (!passesSunShadeFilter) return false;
 
@@ -57,21 +56,19 @@ export function FilterPanelSheet() {
         }
         return true;
       })
-      .sort((a, b) => (a.name || "").localeCompare(b.name || "")); // Sort alphabetically by name
+      .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
   }, [processedPlaces, sunShadeFilter, amenityNameQuery]);
 
   const handlePlaceListItemClick = (place: Place) => {
     setSelectedPlaceDetail(place);
-    setIsBookmarkSheetOpen(false); // Close bookmark sheet
-    setIsOpen(false); // Close this filter panel sheet
+    setIsBookmarkSheetOpen(false);
+    setIsOpen(false);
 
-    // Pan map to the selected place
     if (mapRef && place.relevantShadowPoint) {
       mapRef.flyTo(
         [place.relevantShadowPoint.lat, place.relevantShadowPoint.lng],
         17,
         {
-          // Zoom to level 17
           animate: true,
           duration: 0.8,
         }
@@ -89,7 +86,10 @@ export function FilterPanelSheet() {
           <span className="hidden sm:inline">Filters & Results</span>
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[380px] sm:w-[450px] flex flex-col p-0 z-[1050]">
+      {/* Ensure SheetContent has a defined height or max-height for flex-1 to work */}
+      <SheetContent className="w-[380px] sm:w-[450px] flex flex-col p-0 z-[1050] h-full">
+        {" "}
+        {/* Added h-full */}
         <SheetHeader className="p-4 sm:p-6 pb-3 border-b">
           <div className="flex justify-between items-center">
             <SheetTitle className="text-lg sm:text-xl">
@@ -110,10 +110,7 @@ export function FilterPanelSheet() {
             details.
           </SheetDescription>
         </SheetHeader>
-
         <div className="p-4 sm:p-6 space-y-6 border-b">
-          {" "}
-          {/* Filters section */}
           <div>
             <h4 className="text-sm font-medium mb-2 text-muted-foreground">
               Search by Name in View
@@ -127,9 +124,9 @@ export function FilterPanelSheet() {
             <FilterControls />
           </div>
         </div>
-
         {/* List of Filtered Places */}
-        <ScrollArea className="flex-1 px-4 sm:px-6 py-4">
+        {/* Added min-h-0 to ScrollArea to ensure it correctly fills available space */}
+        <ScrollArea className="flex-1 px-4 sm:px-6 py-4 min-h-0">
           {placesToList.length === 0 && (
             <div className="pt-10 text-center">
               <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
@@ -190,10 +187,6 @@ export function FilterPanelSheet() {
             })}
           </div>
         </ScrollArea>
-        {/* Footer for sheet, if needed */}
-        {/* <SheetFooter className="p-4 border-t">
-            <SheetClose asChild><Button variant="outline">Close</Button></SheetClose>
-        </SheetFooter> */}
       </SheetContent>
     </Sheet>
   );
