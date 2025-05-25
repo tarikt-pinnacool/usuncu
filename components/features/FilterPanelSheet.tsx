@@ -19,6 +19,7 @@ import { useAppStore } from "@/store/appStore";
 import { Place } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
+import { LocationSearchInput } from "./LocationSearchInput"; // <--- NEW: Import LocationSearchInput
 
 export function FilterPanelSheet() {
   const [isOpen, setIsOpen] = useState(false);
@@ -81,20 +82,20 @@ export function FilterPanelSheet() {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
+        {/* Potentially update button text/icon to be more generic "Search & Filters" */}
         <Button variant="outline" className="h-9 px-3 sm:h-10 sm:px-4">
           <SlidersHorizontal className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Filters & Results</span>
+          <span className="hidden sm:inline">Filters & Search</span>{" "}
+          {/* <--- NEW: Updated text for clarity */}
         </Button>
       </SheetTrigger>
-      {/* Ensure SheetContent has a defined height or max-height for flex-1 to work */}
       <SheetContent className="w-[380px] sm:w-[450px] flex flex-col p-0 z-[1050] h-full">
-        {" "}
-        {/* Added h-full */}
         <SheetHeader className="p-4 sm:p-6 pb-3 border-b">
           <div className="flex justify-between items-center">
             <SheetTitle className="text-lg sm:text-xl">
-              Refine & View Results
-            </SheetTitle>
+              Find Your Spot
+            </SheetTitle>{" "}
+            {/* <--- NEW: More generic title */}
             <SheetClose asChild>
               <Button
                 variant="ghost"
@@ -106,15 +107,27 @@ export function FilterPanelSheet() {
             </SheetClose>
           </div>
           <SheetDescription className="text-xs sm:text-sm">
-            Filter by name or sun/shade. Click item to view on map & see
-            details.
-          </SheetDescription>
+            Search new locations or refine places in your current view.
+          </SheetDescription>{" "}
+          {/* <--- NEW: Updated description */}
         </SheetHeader>
+
         <div className="p-4 sm:p-6 space-y-6 border-b">
+          {/* <--- NEW: Global Location Search Section --- */}
           <div>
             <h4 className="text-sm font-medium mb-2 text-muted-foreground">
-              Search by Name in View
+              Search New Location
             </h4>
+            <LocationSearchInput /> {/* <--- NEW: Added LocationSearchInput */}
+          </div>
+          {/* <--- END NEW Section --- */}
+
+          {/* Existing "Search by Name in View" section */}
+          <div>
+            <h4 className="text-sm font-medium mb-2 text-muted-foreground">
+              Filter by Name in Current View
+            </h4>{" "}
+            {/* <--- NEW: Updated heading for clarity */}
             <AmenityNameSearchInput />
           </div>
           <div className="pt-4">
@@ -124,8 +137,8 @@ export function FilterPanelSheet() {
             <FilterControls />
           </div>
         </div>
+
         {/* List of Filtered Places */}
-        {/* Added min-h-0 to ScrollArea to ensure it correctly fills available space */}
         <ScrollArea className="flex-1 px-4 sm:px-6 py-4 min-h-0">
           {placesToList.length === 0 && (
             <div className="pt-10 text-center">

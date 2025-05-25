@@ -2,7 +2,6 @@
 "use client";
 import { useEffect } from "react";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
-import { LocationSearchInput } from "@/components/features/LocationSearchInput";
 import { Button } from "@/components/ui/button";
 import { Loader2, LocateFixedIcon, RefreshCw, SearchX } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
@@ -240,14 +239,6 @@ export default function HomePage() {
               <LocateFixedIcon className="h-5 w-5" />
             </Button>
             <ThemeToggleButton />
-          </div>
-        </div>
-
-        <div className="w-full grid grid-cols-1 md:grid-cols-2 items-center gap-3 sm:gap-4 pt-2 sm:pt-0">
-          <div className="md:col-span-1 w-full">
-            <LocationSearchInput />
-          </div>
-          <div className="md:col-span-1 flex md:justify-end w-full md:w-auto">
             <FilterPanelSheet />
           </div>
         </div>
