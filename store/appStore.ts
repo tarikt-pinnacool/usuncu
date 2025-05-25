@@ -10,37 +10,47 @@ import {
 } from "@/lib/types";
 import { toast } from "sonner";
 import * as turf from "@turf/turf";
-import type LType from "leaflet"; // Import Leaflet type for mapRef.getBounds()
+import type LType from "leaflet";
 
 type SunShadeFilter = "all" | "sun" | "shade";
 
-// Default map center (e.g., Sarajevo) if no location selected/found
 const DEFAULT_MAP_CENTER: Coordinates = { lat: 43.8563, lng: 18.4131 };
 const DEFAULT_MAP_ZOOM = 13;
-const MIN_ZOOM_LEVEL_FOR_FETCH = 13; // Define a minimum zoom level for fetching
+const MIN_ZOOM_LEVEL_FOR_FETCH = 13; // Set a realistic minimum zoom for fetching detailed data
 
 interface AppState {
   currentTime: Date;
-  userCoordinates: Coordinates | null; // From browser geolocation
+  userCoordinates: Coordinates | null;
   isBookmarkSheetOpen: boolean;
 
   searchQuery: string;
-  geocodingResults: GeocodingResult[]; // Suggestions from geocoding API
-  selectedLocation: GeocodingResult | null; // The location picked by user from search or "my location"
+  geocodingResults: GeocodingResult[];
+  selectedLocation: GeocodingResult | null;
 
-  mapCenter: Coordinates; // Current center of the map
-  mapZoom: number; // Current zoom level of the map
-  mapBoundsForQuery: BoundingBox | null; // BBox string for Overpass API
+  mapCenter: Coordinates;
+  mapZoom: number;
+  // mapBoundsForQuery will now strictly represent the *current map viewport bounds*.
+  // It is NOT the query key for fetching, but rather the basis for calculating *what* to fetch.
+  mapBoundsForQuery: BoundingBox | null;
 
+  // NEW: Global pool of all fetched data
+  allFetchedPlaces: Place[];
+  allFetchedBuildings: Building[];
+  // NEW: History of bounding boxes for which data has been successfully fetched
+  fetchedBoundsHistory: BoundingBox[];
+
+  // These remain but will be populated by a derived state effect in `app/page.tsx`
+  // They represent the data *currently visible* in the map viewport.
   places: Place[];
-  processedPlaces: Place[]; // Places with sun/shade status, relevantShadowPoint
+  processedPlaces: Place[]; // This needs to be populated from `places` (the filtered ones)
   buildings: Building[];
+
   bookmarks: string[];
   sunShadeFilter: SunShadeFilter;
-  mapRef: LType.Map | null; // Ensure this is correctly typed
+  mapRef: LType.Map | null;
   hasMapMoved: boolean;
   selectedPlaceDetail: Place | null;
-  amenityNameQuery: string; // For filtering places by name
+  amenityNameQuery: string;
 
   // Actions
   setCurrentTime: (time: Date) => void;
@@ -48,23 +58,33 @@ interface AppState {
 
   setSearchQuery: (query: string) => void;
   setGeocodingResults: (results: GeocodingResult[]) => void;
-  setSelectedLocation: (location: GeocodingResult | null) => void; // Sets selected location and updates mapCenter/Bounds
+  setSelectedLocation: (location: GeocodingResult | null) => void;
 
-  // Modified: added fromUserInteraction parameter
   setMapCenterAndZoom: (
     center: Coordinates,
     zoom: number,
     fromUserInteraction?: boolean
   ) => void;
-  setMapBoundsForQuery: (bounds: BoundingBox | null) => void; // Keep for direct setting if needed (e.g. debugging)
+  // setMapBoundsForQuery is still available for explicit setting (e.g., "Search This Area" button)
+  setMapBoundsForQuery: (bounds: BoundingBox | null) => void;
 
+  // NEW: Actions to manage the global data pool
+  addFetchedOsmData: (
+    newPlaces: Place[],
+    newBuildings: Building[],
+    fetchedBbox: BoundingBox
+  ) => void;
+  clearAllOsmData: () => void; // Clears global data pool and history
+
+  // These are now setters for the *filtered* data relevant to the current viewport
   setPlaces: (places: Place[]) => void;
   setProcessedPlaces: (places: Place[]) => void;
   setBuildings: (buildings: Building[]) => void;
+
   addBookmark: (placeId: string) => void;
   removeBookmark: (placeId: string) => void;
   setSunShadeFilter: (filter: SunShadeFilter) => void;
-  setMapRef: (map: LType.Map | null) => void; // Ensure L.Map type matches LType.Map
+  setMapRef: (map: LType.Map | null) => void;
 
   processAndSetNewLocation: (
     locationData: {
@@ -93,12 +113,19 @@ export const useAppStore = create<AppState>()(
       mapCenter: DEFAULT_MAP_CENTER,
       mapZoom: DEFAULT_MAP_ZOOM,
       mapBoundsForQuery: null,
-      places: [],
-      processedPlaces: [],
-      buildings: [],
+
+      // NEW: Initialize global data pools
+      allFetchedPlaces: [],
+      allFetchedBuildings: [],
+      fetchedBoundsHistory: [],
+
+      places: [], // Will be updated by derived state logic in app/page.tsx
+      processedPlaces: [], // Will be updated by MapComponent.tsx based on 'places'
+      buildings: [], // Will be updated by derived state logic in app/page.tsx
+
       bookmarks: [],
       sunShadeFilter: "all",
-      mapRef: null, // Initialize mapRef as null
+      mapRef: null,
       isBookmarkSheetOpen: false,
       hasMapMoved: false,
       selectedPlaceDetail: null,
@@ -108,6 +135,7 @@ export const useAppStore = create<AppState>()(
       setCurrentTime: (time) => set({ currentTime: time }),
       setUserCoordinates: (coords) => {
         set({ userCoordinates: coords });
+        // If no explicit location selected and GPS is available, use GPS for initial view
         if (coords && !get().selectedLocation && !get().mapBoundsForQuery) {
           get().processAndSetNewLocation(
             {
@@ -136,6 +164,7 @@ export const useAppStore = create<AppState>()(
             boundingbox: location.boundingbox,
           });
         } else {
+          // If location is cleared, revert to user GPS if available, or default
           const userCoords = get().userCoordinates;
           if (userCoords) {
             get().processAndSetNewLocation(
@@ -147,6 +176,8 @@ export const useAppStore = create<AppState>()(
               true
             );
           } else {
+            // Revert to default map view and clear all data
+            get().clearAllOsmData();
             set({
               mapCenter: DEFAULT_MAP_CENTER,
               mapZoom: DEFAULT_MAP_ZOOM,
@@ -156,7 +187,6 @@ export const useAppStore = create<AppState>()(
         }
       },
 
-      // --- CRITICAL CHANGE HERE ---
       setMapCenterAndZoom: (
         newObservedCenter,
         newObservedZoom,
@@ -171,12 +201,12 @@ export const useAppStore = create<AppState>()(
             state.mapZoom !== newObservedZoom;
 
           if (viewActuallyChanged) {
-            const currentMapRef = get().mapRef; // Get the actual Leaflet map instance
+            const currentMapRef = get().mapRef;
             let calculatedMapBoundsForQuery: BoundingBox | null = null;
-            let shouldClearData = false;
+            let shouldClearAllData = false; // Flag to clear global data if zoom is too far out
 
-            if (currentMapRef && fromUserInteraction) {
-              // If this change is from user interaction (pan/zoom)
+            if (currentMapRef) {
+              // Ensure mapRef is available
               if (newObservedZoom >= MIN_ZOOM_LEVEL_FOR_FETCH) {
                 const bounds = currentMapRef.getBounds();
                 calculatedMapBoundsForQuery = [
@@ -185,36 +215,31 @@ export const useAppStore = create<AppState>()(
                   bounds.getNorth(),
                   bounds.getEast(),
                 ];
-                // Always clear data when user changes map view at a fetchable zoom
-                // to ensure a fresh fetch for the new area.
-                shouldClearData = true;
               } else {
-                // If zoomed out beyond threshold, clear bounds and data
-                calculatedMapBoundsForQuery = null;
-                shouldClearData = true;
-                toast.info("Zoom in to see amenities in this area.");
+                calculatedMapBoundsForQuery = null; // Too zoomed out to query
+                shouldClearAllData = true; // Signal to clear all previously fetched data
+                toast.info(
+                  `Zoom in to at least level ${MIN_ZOOM_LEVEL_FOR_FETCH} to load places.`
+                );
               }
-            } else if (!fromUserInteraction) {
-              // If programmatic move (e.g., flyTo from processAndSetNewLocation or initial setup),
-              // we DO NOT calculate bounds here. mapBoundsForQuery should have been set
-              // by the calling `processAndSetNewLocation`, or remains null for default startup.
-              // We also DO NOT clear data, as data clear would have happened in processAndSetNewLocation
-              // or is not needed for initial map setup.
-              calculatedMapBoundsForQuery = state.mapBoundsForQuery; // Keep current bounds
-              shouldClearData = false;
             }
 
             const newState = {
               mapCenter: newObservedCenter,
               mapZoom: newObservedZoom,
-              mapBoundsForQuery: calculatedMapBoundsForQuery, // This is the critical update
-              hasMapMoved: fromUserInteraction ? true : state.hasMapMoved, // Flag user movement
+              mapBoundsForQuery: calculatedMapBoundsForQuery, // This reflects *current viewport* for page.tsx to use
+              hasMapMoved: fromUserInteraction ? true : state.hasMapMoved, // Indicate user interaction
             };
 
-            // Conditionally clear data *after* setting the new state values
-            if (shouldClearData) {
+            if (shouldClearAllData) {
+              // If we zoom out too far, clear all accumulated data and history.
+              // This forces a fresh fetch when user zooms back in.
               return {
                 ...newState,
+                allFetchedPlaces: [],
+                allFetchedBuildings: [],
+                fetchedBoundsHistory: [],
+                // Also clear derived states (places, buildings, processedPlaces)
                 places: [],
                 buildings: [],
                 processedPlaces: [],
@@ -222,18 +247,76 @@ export const useAppStore = create<AppState>()(
             }
             return newState;
           } else {
-            return {}; // No state change needed if observed view matches stored target view
+            return {}; // No state change if observed view matches stored target view
           }
         });
       },
-      // --- END CRITICAL CHANGE ---
+      setMapBoundsForQuery: (bounds) => {
+        // This is called by "Search This Area" button or `processAndSetNewLocation`.
+        // When explicitly setting bounds (like a new search), we should reset all data and history.
+        get().clearAllOsmData(); // Clear previous data and history
+        set({ mapBoundsForQuery: bounds, hasMapMoved: false }); // Set new bounds and reset 'moved' flag
+      },
 
-      setMapBoundsForQuery: (bounds) => set({ mapBoundsForQuery: bounds }), // Keep this action for direct control if needed
+      // NEW: Action to merge new fetched data into the global pool
+      addFetchedOsmData: (newPlaces, newBuildings, fetchedBbox) => {
+        set((state) => {
+          // Deduplicate new places before merging
+          const existingPlaceIds = new Set(
+            state.allFetchedPlaces.map((p) => p.id)
+          );
+          const uniqueNewPlaces = newPlaces.filter(
+            (p) => !existingPlaceIds.has(p.id)
+          );
+          const updatedAllFetchedPlaces = [
+            ...state.allFetchedPlaces,
+            ...uniqueNewPlaces,
+          ];
 
+          // Deduplicate new buildings before merging
+          const existingBuildingIds = new Set(
+            state.allFetchedBuildings.map((b) => b.id)
+          );
+          const uniqueNewBuildings = newBuildings.filter(
+            (b) => !existingBuildingIds.has(b.id)
+          );
+          const updatedAllFetchedBuildings = [
+            ...state.allFetchedBuildings,
+            ...uniqueNewBuildings,
+          ];
+
+          // Add the newly fetched bounding box to the history
+          // Simple addition for now; getUnfetchedAreas handles complex overlaps
+          const updatedFetchedBoundsHistory = [
+            ...state.fetchedBoundsHistory,
+            fetchedBbox,
+          ];
+
+          return {
+            allFetchedPlaces: updatedAllFetchedPlaces,
+            allFetchedBuildings: updatedAllFetchedBuildings,
+            fetchedBoundsHistory: updatedFetchedBoundsHistory,
+          };
+        });
+      },
+      // NEW: Action to clear all global data and history
+      clearAllOsmData: () => {
+        set({
+          allFetchedPlaces: [],
+          allFetchedBuildings: [],
+          fetchedBoundsHistory: [],
+          places: [], // Also clear derived states
+          buildings: [],
+          processedPlaces: [],
+        });
+      },
+
+      // These actions remain but are now populated by `app/page.tsx` derived state logic
       setPlaces: (places) => set({ places }),
       setProcessedPlaces: (newProcessedPlaces) =>
         set({ processedPlaces: newProcessedPlaces }),
       setBuildings: (buildings) => set({ buildings }),
+
       addBookmark: (placeId) =>
         set((state) => ({
           bookmarks: Array.from(new Set([...state.bookmarks, placeId])),
@@ -248,9 +331,11 @@ export const useAppStore = create<AppState>()(
       setSelectedPlaceDetail: (place) => {
         set({ selectedPlaceDetail: place });
       },
-
-      // --- REFINED: processAndSetNewLocation ---
       processAndSetNewLocation: (locationData, isUserGps = false) => {
+        // When a new explicit location is set (via search or GPS), we clear all old data
+        // This ensures a fresh start for fetching in the new location.
+        get().clearAllOsmData();
+
         if (!locationData) {
           set({
             selectedLocation: null,
@@ -260,9 +345,6 @@ export const useAppStore = create<AppState>()(
             mapBoundsForQuery: null,
             selectedPlaceDetail: null,
             hasMapMoved: false,
-            processedPlaces: [],
-            places: [],
-            buildings: [],
           });
           return;
         }
@@ -272,11 +354,13 @@ export const useAppStore = create<AppState>()(
         let newZoom = DEFAULT_MAP_ZOOM;
 
         if (locationData.boundingbox) {
+          // Nominatim boundingbox: [minlat, maxlat, minlon, maxlon]
+          // Our BoundingBox: [S, W, N, E]
           newBounds = [
-            parseFloat(locationData.boundingbox[0]), // S
-            parseFloat(locationData.boundingbox[2]), // W
-            parseFloat(locationData.boundingbox[1]), // N
-            parseFloat(locationData.boundingbox[3]), // E
+            parseFloat(locationData.boundingbox[0]), // minLat (S)
+            parseFloat(locationData.boundingbox[2]), // minLng (W)
+            parseFloat(locationData.boundingbox[1]), // maxLat (N)
+            parseFloat(locationData.boundingbox[3]), // maxLng (E)
           ];
           newZoom = 14; // Default zoom for a searched location
         } else if (isUserGps) {
@@ -287,12 +371,12 @@ export const useAppStore = create<AppState>()(
           });
 
           if (buffered && buffered.geometry) {
-            const bboxArray = turf.bbox(buffered);
+            const bboxArray = turf.bbox(buffered); // turf.bbox returns [minX, minY, maxX, maxY] (w,s,e,n)
             newBounds = [
-              bboxArray[1],
-              bboxArray[0],
-              bboxArray[3],
-              bboxArray[2],
+              bboxArray[1], // South
+              bboxArray[0], // West
+              bboxArray[3], // North
+              bboxArray[2], // East
             ];
             newZoom = 15; // Slightly closer zoom for user's immediate vicinity
           } else {
@@ -329,24 +413,16 @@ export const useAppStore = create<AppState>()(
           newSelectedLocationState = get().selectedLocation;
         }
 
-        // When a new explicit location is set, we:
-        // 1. Update mapCenter, mapZoom, and mapBoundsForQuery to match the new location.
-        // 2. Clear existing places/buildings immediately because new data is expected.
-        // 3. Reset hasMapMoved as a new "query area" has been set.
+        // Set the map view and the initial query bounds
         set({
           mapCenter: newCenter,
           mapZoom: newZoom,
-          mapBoundsForQuery: newBounds, // Set the specific bounds for the new explicit location
+          mapBoundsForQuery: newBounds, // This sets the initial query area for the new location
           selectedLocation: newSelectedLocationState,
           searchQuery: newSearchQueryState,
-          hasMapMoved: false, // Reset this flag
-          places: [], // Clear old data for a fresh fetch
-          buildings: [],
-          processedPlaces: [],
+          hasMapMoved: false,
         });
       },
-      // --- END REFINED processAndSetNewLocation ---
-
       setIsBookmarkSheetOpen: (isOpen) => {
         set({ isBookmarkSheetOpen: isOpen });
         if (isOpen && get().selectedPlaceDetail) {
