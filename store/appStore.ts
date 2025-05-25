@@ -31,6 +31,7 @@ interface AppState {
   mapBoundsForQuery: BoundingBox | null; // BBox string for Overpass API
 
   places: Place[];
+  processedPlaces: Place[]; // Places with sun/shade status, relevantShadowPoint
   buildings: Building[];
   bookmarks: string[];
   sunShadeFilter: SunShadeFilter;
@@ -51,6 +52,7 @@ interface AppState {
   setMapBoundsForQuery: (bounds: BoundingBox | null) => void;
 
   setPlaces: (places: Place[]) => void;
+  setProcessedPlaces: (places: Place[]) => void;
   setBuildings: (buildings: Building[]) => void;
   addBookmark: (placeId: string) => void;
   removeBookmark: (placeId: string) => void;
@@ -87,6 +89,7 @@ export const useAppStore = create<AppState>()(
       mapZoom: DEFAULT_MAP_ZOOM,
       mapBoundsForQuery: null, // Will be derived from selectedLocation or userCoordinates + radius
       places: [],
+      processedPlaces: [],
       buildings: [],
       bookmarks: [], // Bookmarks will be persisted
       sunShadeFilter: "all",
@@ -179,6 +182,8 @@ export const useAppStore = create<AppState>()(
       setMapBoundsForQuery: (bounds) => set({ mapBoundsForQuery: bounds }),
 
       setPlaces: (places) => set({ places }),
+      setProcessedPlaces: (newProcessedPlaces) =>
+        set({ processedPlaces: newProcessedPlaces }),
       setBuildings: (buildings) => set({ buildings }),
       addBookmark: (placeId) =>
         set((state) => ({
@@ -208,13 +213,15 @@ export const useAppStore = create<AppState>()(
             mapBoundsForQuery: null,
             selectedPlaceDetail: null,
             hasMapMoved: false,
+            processedPlaces: [],
+            places: [],
           });
           return;
         }
 
         // Clear old places/buildings
         if (get().places.length > 0 || get().buildings.length > 0) {
-          set({ places: [], buildings: [] });
+          set({ places: [], buildings: [], processedPlaces: [] });
         }
 
         const newCenter = { lat: locationData.lat, lng: locationData.lng };

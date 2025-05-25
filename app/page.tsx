@@ -13,11 +13,10 @@ import { toast } from "sonner";
 import { Place, Building, BoundingBox } from "@/lib/types"; // BoundingBox
 import { useCurrentTime } from "@/hooks/useCurrentTime";
 import { useUserLocation } from "@/hooks/useUserLocation";
-import { FilterControls } from "@/components/features/FilterControls";
 import { BookmarkListSheet } from "@/components/features/BookmarkListSheet";
 import { useSunAlerts } from "@/hooks/useSunAlerts"; // Import
 import { PlaceDetailSheet } from "@/components/features/PlaceDetailsSheet";
-import { AmenityNameSearchInput } from "@/components/features/AmenityNameSearchInput";
+import { FilterPanelSheet } from "@/components/features/FilterPanelSheet"; // IMPORT NEW
 
 const MapComponentWithNoSSR = dynamic(
   () => import("@/components/map/MapComponent"),
@@ -171,8 +170,6 @@ export default function HomePage() {
         {/* Top Row: Logo & Theme/Location Buttons */}
         <div className="w-full flex justify-between items-center">
           <div className="flex-shrink-0">
-            {" "}
-            {/* Logo container */}
             <h1 className="text-xl font-semibold truncate">
               <img
                 src="/logo_transparent.png"
@@ -181,7 +178,9 @@ export default function HomePage() {
               />
             </h1>
           </div>
-          <div className="flex items-center space-x-2 z-1000">
+          <div className="flex items-center space-x-2">
+            {" "}
+            {/* Keep z-index here if needed for dropdowns inside these, e.g. ThemeToggle */}
             <BookmarkListSheet />
             <Button
               variant="outline"
@@ -195,22 +194,17 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Bottom Row: Location Search, Amenity Name Search & Filters */}
-        <div className="w-full grid grid-cols-1 md:grid-cols-3 items-center gap-3 sm:gap-4">
-          <div className="md:col-span-1">
+        {/* Bottom Row: Location Search & Main Filter Trigger */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-2 items-center gap-3 sm:gap-4 pt-2 sm:pt-0">
+          <div className="md:col-span-1 w-full">
             {" "}
-            {/* Location Search */}
+            {/* Location Search - ensure it can take full width on small screens */}
             <LocationSearchInput />
           </div>
-          <div className="md:col-span-1">
+          <div className="md:col-span-1 flex md:justify-end w-full md:w-auto">
             {" "}
-            {/* Amenity Name Search */}
-            <AmenityNameSearchInput />
-          </div>
-          <div className="md:col-span-1 flex md:justify-end">
-            {" "}
-            {/* Filter controls */}
-            <FilterControls />
+            {/* Filter Panel Trigger */}
+            <FilterPanelSheet />
           </div>
         </div>
       </header>

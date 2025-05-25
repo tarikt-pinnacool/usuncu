@@ -107,6 +107,8 @@ const MapComponent = () => {
     setMapRef,
     setMapCenterAndZoom,
     places: allPlacesFromStore,
+    processedPlaces,
+    setProcessedPlaces,
     buildings,
     currentTime,
     sunShadeFilter,
@@ -127,7 +129,6 @@ const MapComponent = () => {
     Map<string, LType.Marker>
   >(new Map());
   const [shadowLayers, setShadowLayers] = useState<LType.GeoJSON[]>([]); // For managing shadow L.GeoJSON objects
-  const [processedPlaces, setProcessedPlaces] = useState<Place[]>([]); // Holds places with isInSun, relevantShadowPoint
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -377,8 +378,8 @@ const MapComponent = () => {
       const anySunny = processedPlaces.some((p) => p.isInSun); // Check before potentially modifying processedPlaces
       if (!sunPosition && anySunny) {
         // console.log("CORE LOGIC: Sun down, marking all processed as shaded.");
-        setProcessedPlaces((prev) =>
-          prev.map((p) => ({ ...p, isInSun: false }))
+        setProcessedPlaces(
+          processedPlaces.map((p) => ({ ...p, isInSun: false }))
         );
       } else if (
         !sunPosition &&
@@ -441,6 +442,7 @@ const MapComponent = () => {
     allPlacesFromStore,
     isLeafletLoaded,
     currentTime,
+    setProcessedPlaces,
   ]);
 
   // 7. Effect for Marker Creation/Updating (Based on processedPlaces)
