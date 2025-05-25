@@ -63,12 +63,12 @@ const createLeafletIcon = (options: IconOptions): LType.DivIcon | undefined => {
 
   const iconHtml = `
     <div class="${wrapperClasses}" style="width:${iconSize}px; height:${iconSize}px;">
-      <svg xmlns="http://www.w3.org/2000/svg" 
+      <svg xmlns="http://www.w3.org/2000/svg"
            width="${options.isSelected ? "20" : "18"}" height="${
     options.isSelected ? "20" : "18"
-  }" 
-           viewBox="0 0 24 24" 
-           fill="none" 
+  }"
+           viewBox="0 0 24 24"
+           fill="none"
            stroke="currentColor" <!-- Will be set by baseColorClass -->
            class="${baseColorClass}"
            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -125,7 +125,6 @@ const MapComponent = () => {
     selectedPlaceDetail,
     setSelectedPlaceDetail,
     setIsBookmarkSheetOpen,
-    // setMapBoundsForQuery, // Not directly used for map events here
   } = useAppStore();
 
   const sunPosition = useSunPosition(mapCenter.lat, mapCenter.lng);
@@ -133,7 +132,7 @@ const MapComponent = () => {
   const [markerInstances, setMarkerInstances] = useState<
     Map<string, LType.Marker>
   >(new Map());
-  const [shadowLayers, setShadowLayers] = useState<LType.GeoJSON[]>([]); // For managing shadow L.GeoJSON objects
+  const [shadowLayers, setShadowLayers] = useState<LType.GeoJSON[]>([]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -154,12 +153,8 @@ const MapComponent = () => {
       });
       setIsLeafletLoaded(true);
     });
+  }, []);
 
-    // Cleanup for L potentially being re-assigned if component re-mounts (though unlikely here)
-    // No specific cleanup for L itself unless it had global side effects we managed.
-  }, []); // Run once to load Leaflet module
-
-  // Memoized callback for map view changes
   const processMapViewChange = useCallback(() => {
     if (!mapInstanceRef.current) return;
     const currentMap = mapInstanceRef.current;
@@ -172,13 +167,11 @@ const MapComponent = () => {
     );
   }, [setMapCenterAndZoom]);
 
-  // Create a debounced version of the handler AT THE TOP LEVEL OF THE COMPONENT
   const debouncedProcessMapViewChange = useDebouncedCallback(
     processMapViewChange,
     300
-  ); // 300ms debounce
+  );
 
-  // 2. Effect for Map Instance Initialization & Core Event Listeners
   useEffect(() => {
     if (
       isLeafletLoaded &&
@@ -194,13 +187,8 @@ const MapComponent = () => {
         attribution: "© OSM",
       }).addTo(map);
       mapInstanceRef.current = map;
-      setMapRef(map); // Store the Leaflet map instance in Zustand
+      setMapRef(map);
 
-      // --- CRITICAL ADDITION ---
-      // Initial bounds calculation for data fetching for the initial map view.
-      // This is a programmatic setup (initial map load), so `fromUserInteraction` is `false`.
-      // This ensures mapBoundsForQuery is correctly set for the initial view,
-      // without triggering a data clear if data was already loaded by `processAndSetNewLocation`.
       const initialMapCenter = map.getCenter();
       const initialMapZoom = map.getZoom();
       setMapCenterAndZoom(
@@ -208,7 +196,6 @@ const MapComponent = () => {
         initialMapZoom,
         false
       );
-      // --- END CRITICAL ADDITION ---
 
       map.on("moveend", debouncedProcessMapViewChange);
       map.on("zoomend", debouncedProcessMapViewChange);
@@ -224,8 +211,6 @@ const MapComponent = () => {
         setMapRef(null);
       };
     }
-    // Add setMapCenterAndZoom as a dependency as it's now called here
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isLeafletLoaded,
     debouncedProcessMapViewChange,
@@ -233,7 +218,6 @@ const MapComponent = () => {
     setMapCenterAndZoom,
   ]);
 
-  // 3. Effect for Updating Map View (flyTo)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (map && isLeafletLoaded) {
@@ -249,22 +233,19 @@ const MapComponent = () => {
     }
   }, [mapCenter, mapZoom, isLeafletLoaded]);
 
-  // 4. Effect for Invalidating Map Size
   useEffect(() => {
     const map = mapInstanceRef.current;
-    // Assuming PlaceDetailSheet also uses a similar store variable like `isPlaceDetailSheetOpen`
     if (map && isLeafletLoaded) {
       const timer = setTimeout(() => {
         map.invalidateSize({ animate: true });
-      }, 350); // Match transition duration of sheet/layout changes
+      }, 350);
       return () => clearTimeout(timer);
     }
-  }, [isBookmarkSheetOpen, selectedPlaceDetail, isLeafletLoaded]); // Trigger on either sheet's visibility
+  }, [isBookmarkSheetOpen, selectedPlaceDetail, isLeafletLoaded]);
 
   // 5. Effect for Popup Event Listeners
   useEffect(() => {
     if (!isLeafletLoaded || !mapInstanceRef.current) {
-      // ("Popup listener effect: Map or Leaflet not ready.");
       return;
     }
 
@@ -276,12 +257,12 @@ const MapComponent = () => {
         const placeId = currentTarget.dataset.placeId;
         const placeName = currentTarget.dataset.placeName;
         if (placeId) {
-          const isBookmarked = bookmarks.includes(placeId); // `bookmarks` from effect closure
+          const isBookmarked = bookmarks.includes(placeId);
           if (isBookmarked) {
-            removeBookmark(placeId); // `removeBookmark` from effect closure
+            removeBookmark(placeId);
             toast.success(`"${placeName || "Place"}" removed from bookmarks.`);
           } else {
-            addBookmark(placeId); // `addBookmark` from effect closure
+            addBookmark(placeId);
             toast.success(`"${placeName || "Place"}" added to bookmarks!`);
           }
           map.closePopup();
@@ -294,19 +275,16 @@ const MapComponent = () => {
       if (currentTarget.classList.contains("view-details-button-popup")) {
         const placeId = currentTarget.dataset.placeId;
         if (placeId) {
-          // *** CRITICAL: Find the place from 'processedPlaces' ***
           const placeToDetail = processedPlaces.find((p) => p.id === placeId);
           if (placeToDetail) {
             setIsBookmarkSheetOpen(false);
-            setSelectedPlaceDetail(placeToDetail); // This place object has the latest isInSun
+            setSelectedPlaceDetail(placeToDetail);
             map.closePopup();
           } else {
-            // This might happen if processedPlaces isn't up-to-date yet when popup is clicked
             console.warn(
               "MapComponent: View Details Clicked: Place not found in processedPlaces for ID:",
               placeId
             );
-            // Fallback to allPlacesFromStore, but its isInSun might be stale/null
             const fallbackPlace = allPlacesFromStore.find(
               (p) => p.id === placeId
             );
@@ -327,33 +305,26 @@ const MapComponent = () => {
     const attachPopupListeners = (e: LType.LeafletEvent) => {
       const popupNode = e.popup.getElement();
       if (popupNode) {
-        // Bookmark button listeners
         const bookmarkButtons = popupNode.querySelectorAll(
           ".popup-bookmark-button"
-        ); // Get NodeList
+        );
         bookmarkButtons.forEach((buttonNode: HTMLButtonElement) => {
-          // buttonNode is Element by default
           const button = buttonNode as UsuncuButton;
-          // Clean up previous listener specifically for this button, if any
           if (button._usuncuBookmarkHandler) {
             button.removeEventListener("click", button._usuncuBookmarkHandler);
           }
-          // onPopupBookmarkClick is already defined in the outer scope of this useEffect
           button._usuncuBookmarkHandler = onPopupBookmarkClick;
           button.addEventListener("click", onPopupBookmarkClick);
         });
 
-        // View Details button listeners
         const detailButtons = popupNode.querySelectorAll(
           ".view-details-button-popup"
-        ); // Get NodeList
+        );
         detailButtons.forEach((buttonNode: HTMLButtonElement) => {
-          // buttonNode is Element
           const button = buttonNode as UsuncuButton;
           if (button._usuncuDetailHandler) {
             button.removeEventListener("click", button._usuncuDetailHandler);
           }
-          // onPopupViewDetailsClick is already defined in the outer scope of this useEffect
           button._usuncuDetailHandler = onPopupViewDetailsClick;
           button.addEventListener("click", onPopupViewDetailsClick);
         });
@@ -362,11 +333,8 @@ const MapComponent = () => {
 
     map.on("popupopen", attachPopupListeners);
 
-    // Cleanup: Remove event listener when component unmounts or map changes
     return () => {
       map.off("popupopen", attachPopupListeners);
-      // Note: Dynamically added listeners to elements *inside* popups are harder to clean up perfectly
-      // because the popup DOM is destroyed. The removeEventListener before adding new one mitigates duplicates.
     };
   }, [
     isLeafletLoaded,
@@ -383,15 +351,9 @@ const MapComponent = () => {
   useEffect(() => {
     if (!isLeafletLoaded || !mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
-    // console.log("CORE LOGIC: Triggered", { sunPositionAvailable: !!sunPosition, numBuildings: buildings.length, numAllPlaces: allPlacesFromStore.length });
 
-    // Manage shadowLayers locally within this effect if they are only rendered here
-    // Or, if other effects need to know about shadow L.GeoJSON objects, keep in state but be careful.
-    // For now, let's treat them as transient for rendering within this effect's cycle.
-
-    // Clear previously rendered shadow L.GeoJSON objects from the map
     shadowLayers.forEach((layer) => map.removeLayer(layer));
-    const newRenderedShadowLayers: LType.GeoJSON[] = []; // Temporary for this render cycle
+    const newRenderedShadowLayers: LType.GeoJSON[] = [];
 
     if (!sunPosition || buildings.length === 0) {
       const targetIsInSun = !!sunPosition;
@@ -400,8 +362,8 @@ const MapComponent = () => {
         isInSun: targetIsInSun,
         relevantShadowPoint: getRelevantShadowPointForPlace(p, []),
       }));
-      setProcessedPlaces(newProcessed); // Update Zustand
-      setShadowLayers([]); // Update local state for shadow L.GeoJSON objects
+      setProcessedPlaces(newProcessed);
+      setShadowLayers([]);
       return;
     }
 
@@ -430,34 +392,32 @@ const MapComponent = () => {
         newRenderedShadowLayers.push(shadowLayer);
       });
     }
-    setShadowLayers(newRenderedShadowLayers); // Update local state for shadow L.GeoJSON objects
+    setShadowLayers(newRenderedShadowLayers);
 
     const updatedPlaces = allPlacesFromStore.map((place) => {
       const relevantPoint = getRelevantShadowPointForPlace(place, buildings);
       const inSun = isLocationInSun(relevantPoint, currentShadowFeatures);
       return { ...place, isInSun: inSun, relevantShadowPoint: relevantPoint };
     });
-    setProcessedPlaces(updatedPlaces); // Update Zustand
+    setProcessedPlaces(updatedPlaces);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     sunPosition,
-    buildings, // From Zustand
-    allPlacesFromStore, // From Zustand (raw places)
+    buildings,
+    allPlacesFromStore,
     isLeafletLoaded,
-    currentTime, // From Zustand
-    setProcessedPlaces, // Zustand action (stable)
+    currentTime,
+    setProcessedPlaces,
   ]);
 
   // 7. Effect for Marker Creation/Updating (Based on processedPlaces)
   useEffect(() => {
     if (!isLeafletLoaded || !mapInstanceRef.current || !L) {
-      // If map not ready, or no processed places, ensure existing markers (if any) are cleared.
       if (markerInstances.size > 0) {
-        // Check markerInstances from previous state
         markerInstances.forEach((marker) =>
           mapInstanceRef.current?.removeLayer(marker)
         );
-        setMarkerInstances(new Map()); // Clear the state
+        setMarkerInstances(new Map());
       }
       return;
     }
@@ -465,7 +425,7 @@ const MapComponent = () => {
 
     const newMarkerInstancesState = new Map<string, LType.Marker>();
 
-    // Add/Update markers for current processedPlaces
+    // Define the content strings once per place iteration
     processedPlaces.forEach((place: Place) => {
       const pointToMark = place.relevantShadowPoint || place.center;
       if (!pointToMark) return;
@@ -487,37 +447,22 @@ const MapComponent = () => {
       });
       if (!icon) return;
 
-      let marker = markerInstances.get(place.id);
-
-      if (marker) {
-        marker.setLatLng([pointToMark.lat, pointToMark.lng]);
-        marker.setIcon(icon);
-        marker.setZIndexOffset(isSelected ? 2000 : isBookmarked ? 1000 : 0);
-        marker.setIcon(icon);
-        const tooltipContent = `
-            <div class="p-0 m-0">
-              <h4 class="font-semibold text-xs m-0 p-0">${
-                place.name || "Unnamed Place"
-              }</h4>
-              <p class="text-xs text-muted-foreground m-0 p-0 capitalize">${
-                place.tags?.amenity?.replace(/_/g, " ") || "Place"
-              }</p>
-            </div>
+      // Define tooltip and popup content here, before the if/else block
+      const tooltipContent = `
+            <div class="custom-usuncu-tooltip p-2 rounded-md shadow-lg bg-popover text-popover-foreground border border-border text-xs">
+  <div class="flex items-center mb-0.5">
+    <h5 class="font-semibold leading-tight truncate">${
+      place.name || "Unnamed Place"
+    }</h5>
+  </div>
+  <p class="text-muted-foreground capitalize leading-tight truncate">${
+    place.tags?.amenity?.replace(/_/g, " ") || "Place"
+  }</p>
+</div>
           `;
-        const detailPopupContent = `
+
+      const detailPopupContent = `
           <div class="p-1 max-w-xs">
-            <button
-                class="popup-bookmark-button p-1 -mr-1 -mt-1 text-muted-foreground hover:text-primary"
-                data-place-id="${place.id}"
-                data-place-name="${place.name || "Place"}"
-                title="${isBookmarked ? "Remove bookmark" : "Add bookmark"}"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${
-                  isBookmarked ? "currentColor" : "none"
-                }" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                </svg>
-              </button>
             <div class="flex justify-between items-start">
               <div>
                 <h3 class="font-semibold text-md mb-0.5">${
@@ -536,7 +481,7 @@ const MapComponent = () => {
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${
                   isBookmarked ? "currentColor" : "none"
                 }" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 0 0 1 2 2z"/>
                 </svg>
               </button>
             </div>
@@ -567,11 +512,19 @@ const MapComponent = () => {
             }">View More Details</button>
           </div>
         `;
+
+      let marker = markerInstances.get(place.id);
+
+      if (marker) {
+        marker.setLatLng([pointToMark.lat, pointToMark.lng]);
+        marker.setIcon(icon);
+        marker.setZIndexOffset(isSelected ? 2000 : isBookmarked ? 1000 : 0);
+        // Refresh tooltip and popup content for existing markers
         marker.unbindTooltip().bindTooltip(tooltipContent, {
-          permanent: false, // Only show on hover
-          direction: "top", // Position above the marker
-          offset: L!.point(0, -24), // Adjust offset as needed from iconAnchor
-          sticky: true, // Follows the mouse (can sometimes help with flickering)
+          permanent: false,
+          direction: "top",
+          offset: L!.point(0, -24),
+          sticky: true,
         });
         marker.unbindPopup().bindPopup(detailPopupContent, { minWidth: 240 });
       } else {
@@ -583,36 +536,16 @@ const MapComponent = () => {
             zIndexOffset: isSelected ? 2000 : isBookmarked ? 1000 : 0,
           })
           .addTo(map);
-        const tooltipContent = `
-            <div class="custom-usuncu-tooltip p-2 rounded-md shadow-lg bg-popover text-popover-foreground border border-border text-xs">
-  <div class="flex items-center mb-0.5">
-    <!-- Optional Sun/Moon Icon if place.isInSun is available and you want it this small -->
-    <!-- ${
-      place.isInSun === true
-        ? '<svg class="w-3 h-3 text-orange-500 mr-1.5" ...sun_svg_path...</svg>'
-        : ""
-    } -->
-    <!-- ${
-      place.isInSun === false
-        ? '<svg class="w-3 h-3 text-blue-500 mr-1.5" ...moon_svg_path...</svg>'
-        : ""
-    } -->
-    <h5 class="font-semibold leading-tight truncate">${
-      place.name || "Unnamed Place"
-    }</h5>
-  </div>
-  <p class="text-muted-foreground capitalize leading-tight truncate">${
-    place.tags?.amenity?.replace(/_/g, " ") || "Place"
-  }</p>
-</div>
-          `;
 
+        // Bind tooltip for new markers
         marker.bindTooltip(tooltipContent, {
-          permanent: false, // Only show on hover
-          direction: "top", // Position above the marker
-          offset: L!.point(0, -24), // Adjust offset as needed from iconAnchor
-          sticky: true, // Follows the mouse (can sometimes help with flickering)
+          permanent: false,
+          direction: "top",
+          offset: L!.point(0, -24),
+          sticky: true,
         });
+        marker.bindPopup(detailPopupContent, { minWidth: 240 });
+
         newMarkerInstancesState.set(place.id, marker);
       }
     });
@@ -620,19 +553,12 @@ const MapComponent = () => {
     // Remove markers from the map that were in the old state but not in the new one
     markerInstances.forEach((oldMarker, placeId) => {
       if (!newMarkerInstancesState.has(placeId)) {
-        // console.log("MARKER CREATION/UPDATE: Removing marker no longer in processedPlaces:", placeId);
         map.removeLayer(oldMarker);
       }
     });
 
     setMarkerInstances(newMarkerInstancesState);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    isLeafletLoaded,
-    processedPlaces, // Primary driver
-    bookmarks, // Affects icon and popup content
-    selectedPlaceDetail, // Affects icon
-  ]);
+  }, [isLeafletLoaded, processedPlaces, bookmarks, selectedPlaceDetail]);
 
   // 8. Effect for Toggling Marker Visibility (Based on Filters)
   useEffect(() => {
@@ -646,9 +572,8 @@ const MapComponent = () => {
     const nameQueryLower = amenityNameQuery.toLowerCase().trim();
 
     markerInstances.forEach((marker, placeId) => {
-      const place = processedPlaces.find((p) => p.id === placeId); // Get the latest place data
+      const place = processedPlaces.find((p) => p.id === placeId);
       if (!place) {
-        // Should not happen if markerInstanceMap is in sync with processedPlaces
         if (map.hasLayer(marker)) map.removeLayer(marker);
         return;
       }
@@ -669,16 +594,12 @@ const MapComponent = () => {
 
       if (passesSunShadeFilter && passesNameFilter) {
         if (!map.hasLayer(marker)) {
-          // Add if not already on map
           marker.addTo(map);
         }
-        // marker.setOpacity(1); // If you were using opacity to hide
       } else {
         if (map.hasLayer(marker)) {
-          // Remove if on map but shouldn't be
           map.removeLayer(marker);
         }
-        // marker.setOpacity(0.1); // Example of dimming instead of removing
       }
     });
   }, [
