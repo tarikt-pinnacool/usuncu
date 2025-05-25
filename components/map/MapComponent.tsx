@@ -100,8 +100,8 @@ const createLeafletIcon = (options: IconOptions): LType.DivIcon | undefined => {
 const MapComponent = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<LType.Map | null>(null);
+
   const {
-    selectedPlaceDetail,
     mapCenter,
     mapZoom,
     setMapRef,
@@ -115,57 +115,20 @@ const MapComponent = () => {
     addBookmark,
     removeBookmark,
     isBookmarkSheetOpen,
+    selectedPlaceDetail,
     setSelectedPlaceDetail,
     setIsBookmarkSheetOpen,
+    // setMapBoundsForQuery, // Not directly used for map events here
   } = useAppStore();
 
-  const [markerInstanceMap, setMarkerInstanceMap] = useState<
+  const sunPosition = useSunPosition(mapCenter.lat, mapCenter.lng);
+  const [isLeafletLoaded, setIsLeafletLoaded] = useState(false);
+  const [markerInstances, setMarkerInstances] = useState<
     Map<string, LType.Marker>
   >(new Map());
+  const [shadowLayers, setShadowLayers] = useState<LType.GeoJSON[]>([]); // For managing shadow L.GeoJSON objects
+  const [processedPlaces, setProcessedPlaces] = useState<Place[]>([]); // Holds places with isInSun, relevantShadowPoint
 
-  const debouncedSetMapBoundsForQuery = useDebouncedCallback(
-    // Keep this if you plan to use it elsewhere, or remove if only page.tsx calls setMapBoundsForQuery
-    (bounds: BoundingBox) => {
-      useAppStore.getState().setMapBoundsForQuery(bounds); // Access store method safely
-    },
-    750
-  );
-
-  const sunPosition = useSunPosition(mapCenter.lat, mapCenter.lng); // Use mapCenter for sun position calculation
-
-  const [placeMarkers, setPlaceMarkers] = useState<LType.Marker[]>([]);
-  const [shadowLayers, setShadowLayers] = useState<LType.GeoJSON[]>([]);
-  const [processedPlaces, setProcessedPlaces] = useState<Place[]>([]);
-  const [isLeafletLoaded, setIsLeafletLoaded] = useState(false);
-
-  // Memoize processMapViewChange:
-  // It depends on setMapCenterAndZoom, which is a stable function from Zustand.
-  // It also implicitly depends on mapInstanceRef.current, but that's managed within the function.
-  const processMapViewChange = useCallback(() => {
-    if (!mapInstanceRef.current) return;
-    const currentMap = mapInstanceRef.current;
-    const newCenterFromEvent = currentMap.getCenter(); // Values directly from map event
-    const newZoomFromEvent = currentMap.getZoom();
-    // Log what's coming directly from the map event
-    console.log(
-      "MapComponent: processMapViewChange. Event Center:",
-      newCenterFromEvent,
-      "Event Zoom:",
-      newZoomFromEvent
-    );
-    setMapCenterAndZoom(
-      { lat: newCenterFromEvent.lat, lng: newCenterFromEvent.lng },
-      newZoomFromEvent
-    );
-  }, [setMapCenterAndZoom]);
-
-  // Create a debounced version of the handler AT THE TOP LEVEL OF THE COMPONENT
-  const debouncedProcessMapViewChange = useDebouncedCallback(
-    processMapViewChange,
-    300
-  ); // 300ms debounce
-
-  // Effect for Leaflet loading and map initialization
   useEffect(() => {
     if (typeof window === "undefined") return;
 
@@ -189,7 +152,23 @@ const MapComponent = () => {
     // No specific cleanup for L itself unless it had global side effects we managed.
   }, []); // Run once to load Leaflet module
 
-  // Effect to initialize map instance and attach event listeners
+  // Memoized callback for map view changes
+  const processMapViewChange = useCallback(() => {
+    if (!mapInstanceRef.current) return;
+    const currentMap = mapInstanceRef.current;
+    const newCenter = currentMap.getCenter();
+    const newZoom = currentMap.getZoom();
+    // console.log("MapComponent: processMapViewChange. Event Center:", newCenter, "Event Zoom:", newZoom);
+    setMapCenterAndZoom({ lat: newCenter.lat, lng: newCenter.lng }, newZoom);
+  }, [setMapCenterAndZoom]);
+
+  // Create a debounced version of the handler AT THE TOP LEVEL OF THE COMPONENT
+  const debouncedProcessMapViewChange = useDebouncedCallback(
+    processMapViewChange,
+    300
+  ); // 300ms debounce
+
+  // 2. Effect for Map Instance Initialization & Core Event Listeners
   useEffect(() => {
     if (
       isLeafletLoaded &&
@@ -197,12 +176,7 @@ const MapComponent = () => {
       mapContainerRef.current &&
       !mapInstanceRef.current
     ) {
-      console.log(
-        "MapComponent: Initializing map instance with center:",
-        mapCenter,
-        "zoom:",
-        mapZoom
-      );
+      // console.log("MapComponent: Initializing map instance with stored center:", mapCenter, "zoom:", mapZoom);
       const map = L.map(mapContainerRef.current).setView(
         [mapCenter.lat, mapCenter.lng],
         mapZoom
@@ -210,66 +184,57 @@ const MapComponent = () => {
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution: "© OSM",
       }).addTo(map);
-
       mapInstanceRef.current = map;
       setMapRef(map);
 
-      // Attach the debounced handler to map events
       map.on("moveend", debouncedProcessMapViewChange);
       map.on("zoomend", debouncedProcessMapViewChange);
 
       return () => {
+        // console.log("MapComponent: Cleaning up map instance and listeners.");
         if (map) {
           map.off("moveend", debouncedProcessMapViewChange);
           map.off("zoomend", debouncedProcessMapViewChange);
-          debouncedProcessMapViewChange.cancel(); // Cancel any pending debounced calls
+          debouncedProcessMapViewChange.cancel();
           map.remove();
         }
-        if (mapInstanceRef.current) {
-          // Also ensure mapInstanceRef is cleared on full unmount/cleanup
-          // mapInstanceRef.current.remove();
-          mapInstanceRef.current = null;
-          setMapRef(null);
-        }
+        mapInstanceRef.current = null; // Ensure ref is cleared
+        setMapRef(null);
       };
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLeafletLoaded, debouncedProcessMapViewChange, setMapRef]);
+  }, [isLeafletLoaded, debouncedProcessMapViewChange, setMapRef]); // mapCenter/Zoom read internally for initial view
 
-  // Effect to update map view when mapCenter or mapZoom from store changes (e.g., from search or "My Location")
+  // 3. Effect for Updating Map View (flyTo)
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (map && isLeafletLoaded) {
-      const currentMapLat = map.getCenter().lat;
-      const currentMapLng = map.getCenter().lng;
+      const currentMapCenter = map.getCenter();
       const currentMapZoom = map.getZoom();
-
-      // Only flyTo if the map's actual view is significantly different from the store's target view
       if (
-        currentMapLat.toFixed(5) !== mapCenter.lat.toFixed(5) || // Compare map's actual center
-        currentMapLng.toFixed(5) !== mapCenter.lng.toFixed(5) || // with store's target center
+        currentMapCenter.lat.toFixed(5) !== mapCenter.lat.toFixed(5) ||
+        currentMapCenter.lng.toFixed(5) !== mapCenter.lng.toFixed(5) ||
         currentMapZoom !== mapZoom
       ) {
-        // console.log("MapComponent: flyTo effect. Current view differs from store. Flying to:", mapCenter, mapZoom);
         map.flyTo([mapCenter.lat, mapCenter.lng], mapZoom);
       }
     }
   }, [mapCenter, mapZoom, isLeafletLoaded]);
 
-  // Effect to invalidate map size when sheet open state changes
+  // 4. Effect for Invalidating Map Size
   useEffect(() => {
     const map = mapInstanceRef.current;
+    // Assuming PlaceDetailSheet also uses a similar store variable like `isPlaceDetailSheetOpen`
+    const isAnySheetOpen = isBookmarkSheetOpen || selectedPlaceDetail !== null;
     if (map && isLeafletLoaded) {
-      // Ensure map and Leaflet are loaded
       const timer = setTimeout(() => {
-        // console.log("MapComponent: Invalidating map size.");
         map.invalidateSize({ animate: true });
-      }, 350);
+      }, 350); // Match transition duration of sheet/layout changes
       return () => clearTimeout(timer);
     }
-  }, [isBookmarkSheetOpen, isLeafletLoaded]); // Also depend on isLeafletLoaded
+  }, [isBookmarkSheetOpen, selectedPlaceDetail, isLeafletLoaded]); // Trigger on either sheet's visibility
 
-  // Effect to handle clicks on bookmark buttons within Leaflet popups
+  // 5. Effect for Popup Event Listeners
   useEffect(() => {
     if (!isLeafletLoaded || !mapInstanceRef.current) {
       // console.log("Popup listener effect: Map or Leaflet not ready.");
@@ -400,6 +365,7 @@ const MapComponent = () => {
     setIsBookmarkSheetOpen,
   ]);
 
+  // 6. Effect for CORE LOGIC (Shadow Calculation & processedPlaces Update)
   useEffect(() => {
     // console.log(`CORE LOGIC: Triggered. Leaflet: ${isLeafletLoaded}, Sun: ${!!sunPosition}, Buildings: ${buildings.length}, AllPlaces: ${allPlacesFromStore.length}`);
     if (!isLeafletLoaded || !mapInstanceRef.current) return;
@@ -468,7 +434,6 @@ const MapComponent = () => {
       const inSun = isLocationInSun(relevantPoint, currentShadowFeatures);
       return { ...place, isInSun: inSun, relevantShadowPoint: relevantPoint };
     });
-    // console.log(`CORE LOGIC: Setting processedPlaces. Count: ${updatedPlaces.length}. First place: ${updatedPlaces[0]?.name}, Sun: ${updatedPlaces[0]?.isInSun}`);
     setProcessedPlaces(updatedPlaces);
   }, [
     sunPosition,
@@ -476,67 +441,54 @@ const MapComponent = () => {
     allPlacesFromStore,
     isLeafletLoaded,
     currentTime,
-  ]); // Removed processedPlaces
+  ]);
 
+  // 7. Effect for Marker Creation/Updating (Based on processedPlaces)
   useEffect(() => {
-    // console.log(`MARKER RENDER: Processed: ${processedPlaces.length}, SunFilter: ${sunShadeFilter}, NameQuery: "${amenityNameQuery}", Leaflet: ${isLeafletLoaded}`);
-    if (!isLeafletLoaded || !mapInstanceRef.current) return;
+    if (!isLeafletLoaded || !mapInstanceRef.current || !L) return;
     const map = mapInstanceRef.current;
+    const newMarkerInstances = new Map(markerInstances);
 
-    // Clear existing place markers (and their listeners/popups/tooltips)
-    placeMarkers.forEach((marker) => map.removeLayer(marker));
-    const newMarkers: LType.Marker[] = [];
-    const nameQueryLower = amenityNameQuery.toLowerCase().trim();
-
-    const placesToDisplay = processedPlaces.filter((place) => {
-      // Sun/Shade Filter
-      let passesSunShadeFilter = false;
-      if (sunShadeFilter === "all") {
-        passesSunShadeFilter = true;
-      } else if (place.isInSun !== null && place.isInSun !== undefined) {
-        passesSunShadeFilter =
-          sunShadeFilter === "sun" ? place.isInSun : !place.isInSun;
-      } else {
-        // If filter is sun/shade but status is unknown, don't show
-        passesSunShadeFilter = false;
+    // Remove markers for places no longer in processedPlaces (or if all are cleared)
+    newMarkerInstances.forEach((marker, placeId) => {
+      if (!processedPlaces.find((p) => p.id === placeId)) {
+        map.removeLayer(marker);
+        newMarkerInstances.delete(placeId);
       }
-
-      if (!passesSunShadeFilter) return false;
-
-      // Amenity Name Filter
-      if (nameQueryLower) {
-        // If there's a name query
-        const placeNameLower = (place.name || "").toLowerCase();
-        if (!placeNameLower.includes(nameQueryLower)) {
-          return false; // Does not pass name filter
-        }
-      }
-
-      return true; // Passes all filters
     });
 
-    placesToDisplay.forEach((place: Place) => {
+    processedPlaces.forEach((place: Place) => {
       const pointToMark = place.relevantShadowPoint || place.center;
+      if (!pointToMark) return;
+
       if (pointToMark && L) {
         const isBookmarked = bookmarks.includes(place.id);
         const isSelected = selectedPlaceDetail?.id === place.id;
 
-        let iconType: IconOptions["type"] = "unknown";
-        if (place.isInSun === true) iconType = "sun";
-        else if (place.isInSun === false) iconType = "shade";
+        let iconType: IconOptions["type"] =
+          place.isInSun === true
+            ? "sun"
+            : place.isInSun === false
+            ? "shade"
+            : "unknown";
+
         const icon = createLeafletIcon({
           type: iconType,
-          isBookmarked: isBookmarked,
-          isSelected: isSelected,
+          isBookmarked,
+          isSelected,
         });
+        if (!icon) return;
 
-        if (icon) {
-          const marker = L.marker([pointToMark.lat, pointToMark.lng], {
-            icon,
-            interactive: true,
-          }).addTo(map);
+        let existingMarker = newMarkerInstances.get(place.id);
 
-          // Tooltip for hover
+        if (existingMarker) {
+          // Update existing marker (e.g., icon, tooltip, popup content if necessary)
+          existingMarker.setIcon(icon);
+          // Re-bind tooltip and popup to ensure content (like isBookmarked in popup) is fresh
+          // ... (bindTooltip and bindPopup logic as before, ensuring popup content uses current isBookmarked) ...
+          // You might need to store popupContent string generation in a helper
+          // and call existingMarker.setPopupContent(newPopupContent) if Leaflet supports it easily,
+          // or just re-bind. Re-binding is simpler.
           const tooltipContent = `
             <div class="p-0 m-0">
               <h4 class="font-semibold text-xs m-0 p-0">${
@@ -547,103 +499,164 @@ const MapComponent = () => {
               }</p>
             </div>
           `;
-
-          marker.bindTooltip(tooltipContent, {
+          const detailPopupContent = `
+          <div class="p-1 max-w-xs">
+            <button
+                class="popup-bookmark-button p-1 -mr-1 -mt-1 text-muted-foreground hover:text-primary"
+                data-place-id="${place.id}"
+                data-place-name="${place.name || "Place"}"
+                title="${isBookmarked ? "Remove bookmark" : "Add bookmark"}"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${
+                  isBookmarked ? "currentColor" : "none"
+                }" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+              </button>
+            <div class="flex justify-between items-start">
+              <div>
+                <h3 class="font-semibold text-md mb-0.5">${
+                  place.name || "Unnamed Place"
+                }</h3>
+                <p class="text-xs text-muted-foreground capitalize mb-1">${
+                  place.tags?.amenity?.replace(/_/g, " ") || "Place"
+                }</p>
+              </div>
+              <button
+                class="popup-bookmark-button p-1 -mr-1 -mt-1 text-muted-foreground hover:text-primary"
+                data-place-id="${place.id}"
+                data-place-name="${place.name || "Place"}"
+                title="${isBookmarked ? "Remove bookmark" : "Add bookmark"}"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${
+                  isBookmarked ? "currentColor" : "none"
+                }" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
+              </button>
+            </div>
+            ${
+              place.tags?.cuisine
+                ? `<p class="text-xs capitalize"><span class="font-medium">Cuisine:</span> ${place.tags.cuisine.replace(
+                    /_/g,
+                    " "
+                  )}</p>`
+                : ""
+            }
+            ${
+              place.tags?.["addr:street"]
+                ? `<p class="text-xs"><span class="font-medium">Address:</span> ${
+                    place.tags["addr:street"]
+                  } ${place.tags?.["addr:housenumber"] || ""}</p>`
+                : ""
+            }
+            <p class="text-sm font-medium mt-1.5">Currently: ${
+              place.isInSun === null
+                ? "Checking..."
+                : place.isInSun
+                ? "☀️ In the Sun"
+                : "🌙 In the Shade"
+            }</p>
+            <button class="mt-2 p-1 text-xs text-blue-600 hover:underline view-details-button-popup" data-place-id="${
+              place.id
+            }">View More Details</button>
+          </div>
+        `;
+          existingMarker.unbindTooltip().bindTooltip(tooltipContent, {
             permanent: false, // Only show on hover
             direction: "top", // Position above the marker
             offset: L.point(0, -24), // Adjust offset as needed from iconAnchor
             sticky: true, // Follows the mouse (can sometimes help with flickering)
           });
-
-          // Click listener for opening the PlaceDetailSheet (this also creates a persistent popup)
-          const detailPopupContent = `
-            <div class="p-1 max-w-xs">
-              <button
-                  class="popup-bookmark-button p-1 -mr-1 -mt-1 text-muted-foreground hover:text-primary"
-                  data-place-id="${place.id}"
-                  data-place-name="${place.name || "Place"}"
-                  title="${isBookmarked ? "Remove bookmark" : "Add bookmark"}"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${
-                    isBookmarked ? "currentColor" : "none"
-                  }" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </button>
-              <div class="flex justify-between items-start">
-                <div>
-                  <h3 class="font-semibold text-md mb-0.5">${
-                    place.name || "Unnamed Place"
-                  }</h3>
-                  <p class="text-xs text-muted-foreground capitalize mb-1">${
-                    place.tags?.amenity?.replace(/_/g, " ") || "Place"
-                  }</p>
-                </div>
-                <button
-                  class="popup-bookmark-button p-1 -mr-1 -mt-1 text-muted-foreground hover:text-primary"
-                  data-place-id="${place.id}"
-                  data-place-name="${place.name || "Place"}"
-                  title="${isBookmarked ? "Remove bookmark" : "Add bookmark"}"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${
-                    isBookmarked ? "currentColor" : "none"
-                  }" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-                  </svg>
-                </button>
-              </div>
-              ${
-                place.tags?.cuisine
-                  ? `<p class="text-xs capitalize"><span class="font-medium">Cuisine:</span> ${place.tags.cuisine.replace(
-                      /_/g,
-                      " "
-                    )}</p>`
-                  : ""
-              }
-              ${
-                place.tags?.["addr:street"]
-                  ? `<p class="text-xs"><span class="font-medium">Address:</span> ${
-                      place.tags["addr:street"]
-                    } ${place.tags?.["addr:housenumber"] || ""}</p>`
-                  : ""
-              }
-              <p class="text-sm font-medium mt-1.5">Currently: ${
-                place.isInSun === null
-                  ? "Checking..."
-                  : place.isInSun
-                  ? "☀️ In the Sun"
-                  : "🌙 In the Shade"
+          existingMarker
+            .unbindPopup()
+            .bindPopup(detailPopupContent, { minWidth: 240 });
+        } else {
+          // Create new marker
+          existingMarker = L.marker([pointToMark.lat, pointToMark.lng], {
+            icon,
+            interactive: true,
+            zIndexOffset: isSelected ? 2000 : isBookmarked ? 1000 : 0,
+          }).addTo(map);
+          const tooltipContent = `
+            <div class="p-0 m-0">
+              <h4 class="font-semibold text-xs m-0 p-0">${
+                place.name || "Unnamed Place"
+              }</h4>
+              <p class="text-xs text-muted-foreground m-0 p-0 capitalize">${
+                place.tags?.amenity?.replace(/_/g, " ") || "Place"
               }</p>
-              <button class="mt-2 p-1 text-xs text-blue-600 hover:underline view-details-button-popup" data-place-id="${
-                place.id
-              }">View More Details</button>
             </div>
           `;
-          // We still bind a popup for the click that contains the bookmark and "View More Details"
-          marker.bindPopup(detailPopupContent, { minWidth: 240 });
-
-          // When marker is clicked, open the detail sheet
-          // marker.on("click", () => {
-          //   // console.log("Marker clicked, opening detail sheet for:", place.name);
-          //   setIsBookmarkSheetOpen(false); // Close bookmark sheet if open
-          //   setSelectedPlaceDetail(place);
-          // });
-
-          newMarkers.push(marker);
+          // ... (bindTooltip and bindPopup for new marker) ...
+          // ... (attach 'click' listener for detail sheet) ...
+          existingMarker.bindTooltip(tooltipContent, {
+            permanent: false, // Only show on hover
+            direction: "top", // Position above the marker
+            offset: L.point(0, -24), // Adjust offset as needed from iconAnchor
+            sticky: true, // Follows the mouse (can sometimes help with flickering)
+          });
+          newMarkerInstances.set(place.id, existingMarker);
         }
       }
     });
-    setPlaceMarkers(newMarkers);
-    // console.log(`MARKER RENDER: newMarkers count: ${newMarkers.length}`);
+    setMarkerInstances(newMarkerInstances);
+  }, [isLeafletLoaded, processedPlaces, bookmarks, selectedPlaceDetail]);
+
+  // 8. Effect for Toggling Marker Visibility (Based on Filters)
+  useEffect(() => {
+    if (
+      !isLeafletLoaded ||
+      !mapInstanceRef.current ||
+      markerInstances.size === 0
+    )
+      return;
+    const map = mapInstanceRef.current;
+    const nameQueryLower = amenityNameQuery.toLowerCase().trim();
+
+    markerInstances.forEach((marker, placeId) => {
+      const place = processedPlaces.find((p) => p.id === placeId); // Get the latest place data
+      if (!place) {
+        // Should not happen if markerInstanceMap is in sync with processedPlaces
+        if (map.hasLayer(marker)) map.removeLayer(marker);
+        return;
+      }
+
+      let passesSunShadeFilter = false;
+      if (sunShadeFilter === "all") {
+        passesSunShadeFilter = true;
+      } else if (place.isInSun !== null && place.isInSun !== undefined) {
+        passesSunShadeFilter =
+          sunShadeFilter === "sun" ? place.isInSun : !place.isInSun;
+      }
+
+      let passesNameFilter = true;
+      if (nameQueryLower) {
+        const placeNameLower = (place.name || "").toLowerCase();
+        passesNameFilter = placeNameLower.includes(nameQueryLower);
+      }
+
+      if (passesSunShadeFilter && passesNameFilter) {
+        if (!map.hasLayer(marker)) {
+          // Add if not already on map
+          marker.addTo(map);
+        }
+        // marker.setOpacity(1); // If you were using opacity to hide
+      } else {
+        if (map.hasLayer(marker)) {
+          // Remove if on map but shouldn't be
+          map.removeLayer(marker);
+        }
+        // marker.setOpacity(0.1); // Example of dimming instead of removing
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
+    isLeafletLoaded,
     processedPlaces,
     sunShadeFilter,
-    isLeafletLoaded,
-    bookmarks,
-    addBookmark,
-    removeBookmark,
-    setSelectedPlaceDetail,
-    setIsBookmarkSheetOpen,
+    amenityNameQuery,
+    markerInstances,
   ]);
 
   return <div ref={mapContainerRef} className="h-full w-full bg-muted" />;
