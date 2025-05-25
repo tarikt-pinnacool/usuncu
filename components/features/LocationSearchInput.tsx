@@ -34,10 +34,6 @@ export function LocationSearchInput() {
       }
       setIsLoadingSuggestions(true);
       setShowSuggestions(true); // Show suggestion box (even if it's just a loading state)
-      "LocationSearchInput: Fetching suggestions for query:",
-        query,
-        "URL:",
-        `/api/geocode?q=${encodeURIComponent(query)}`;
 
       try {
         const response = await fetch(
@@ -49,9 +45,11 @@ export function LocationSearchInput() {
         }
         const data: GeocodingResult[] = await response.json();
         setGeocodingResults(data);
-      } catch (error: any) {
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.error("Error fetching geocoding suggestions:", error);
-        toast.error(`Search error: ${error.message}`);
+        toast.error(`Search error: ${errorMessage}`);
         setGeocodingResults([]);
       } finally {
         setIsLoadingSuggestions(false);
@@ -151,7 +149,10 @@ export function LocationSearchInput() {
               geocodingResults.length === 0 &&
               searchQuery.trim().length >= 3 && (
                 <p className="p-4 text-sm text-center text-muted-foreground">
-                  No results found for "{searchQuery}".
+                  <p>
+                    No results found for
+                    <span className="font-semibold">{searchQuery}</span>.
+                  </p>
                 </p>
               )}
             {!isLoadingSuggestions &&

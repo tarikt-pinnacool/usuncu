@@ -92,12 +92,13 @@ export async function GET(request: NextRequest) {
     const { places, buildings } = parseOverpassResponse(data.elements || []);
 
     return NextResponse.json({ places, buildings });
-  } catch (error: any) {
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(`Error in /api/osm for bbox ${bboxStr}:`, error);
     return NextResponse.json(
       {
         error: "Failed to fetch or process data from Overpass API",
-        details: error.message,
+        details: errorMessage,
       },
       { status: 500 }
     );

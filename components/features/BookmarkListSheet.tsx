@@ -17,7 +17,7 @@ import { useAppStore } from "@/store/appStore";
 import { Place } from "@/lib/types";
 import { toast } from "sonner";
 import { useNotificationPermission } from "@/hooks/useNotificationPermission";
-import { BellRing, BellOff } from "lucide-react";
+import { BellRing } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Switch } from "@radix-ui/react-switch";
 import { Label } from "@radix-ui/react-label";
@@ -128,7 +128,7 @@ export function BookmarkListSheet() {
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <Bookmark className="h-16 w-16 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              You haven't bookmarked any spots yet.
+              You haven&apos;t bookmarked any spots yet.
             </p>
             <p className="text-xs text-muted-foreground mt-1">
               Find a spot on the map and click the star in its popup!

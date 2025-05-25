@@ -1,24 +1,29 @@
 // lib/types.ts
+import { Point, Polygon, LineString, MultiPolygon } from "geojson"; // Ensure these are imported
+
 export interface Coordinates {
   lat: number;
   lng: number;
 }
 
 export interface Place {
-  id: string; // OSM ID (e.g., "node/12345", "way/67890")
+  id: string;
   type: "node" | "way" | "relation";
   name?: string;
   tags: Record<string, string>;
-  center: Coordinates; // For ways/relations, this is a representative point
-  geometry?: any; // GeoJSON.Polygon | GeoJSON.Point; - using 'any' for now
+  center: Coordinates;
+  // A Place can be a point (node), a line (way), or a polygon (closed way/relation).
+  // So, its geometry can be any of these.
+  geometry?: Point | Polygon | LineString | null; // More permissive for Place
   isBuildingOutline?: boolean;
   relevantShadowPoint?: Coordinates;
-  isInSun?: boolean | null; // null initially, then boolean
+  isInSun?: boolean | null;
 }
 
 export interface Building {
   id: string;
-  geometry: any; // GeoJSON.Polygon; - using 'any' for now
+  // A Building's geometry should strictly be a Polygon or MultiPolygon.
+  geometry: Polygon | MultiPolygon;
   height?: number;
 }
 

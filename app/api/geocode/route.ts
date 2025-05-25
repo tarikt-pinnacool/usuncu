@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
   const query = searchParams.get("q");
 
   if (!query) {
-    ("API Geocode Route: 'q' parameter is missing.");
     return NextResponse.json(
       { error: 'Missing query parameter "q"' },
       { status: 400 }
@@ -62,7 +61,9 @@ export async function GET(request: NextRequest) {
       .slice(0, 5);
 
     return NextResponse.json(filteredData);
-  } catch (error: any) {
+  } catch (error) {
+    // Keep as implicit 'unknown' or type 'Error' if sure
+    const errorMessage = error instanceof Error ? error.message : String(error);
     console.error(
       "API Geocode Route: Error fetching/processing Nominatim data:",
       error
@@ -70,7 +71,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(
       {
         error: "Failed to fetch geocoding results from Nominatim",
-        details: error.message,
+        details: errorMessage,
       },
       { status: 500 }
     );

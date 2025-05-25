@@ -77,10 +77,7 @@ export function useSunAlerts() {
           const relevantBuildingsNow = buildings.filter((b) => {
             if (!b.geometry || !place.center) return false;
             try {
-              const buildingFeature =
-                b.geometry.type === "Feature"
-                  ? b.geometry
-                  : turf.feature(b.geometry);
+              const buildingFeature = turf.feature(b.geometry);
               const buildingCenter = turf.centroid(
                 buildingFeature as turf.AllGeoJSON
               ); // Cast to AllGeoJSON
@@ -135,10 +132,7 @@ export function useSunAlerts() {
               const relevantBuildingsFuture = buildings.filter((b) => {
                 if (!b.geometry || !place.center) return false;
                 try {
-                  const buildingFeature =
-                    b.geometry.type === "Feature"
-                      ? b.geometry
-                      : turf.feature(b.geometry);
+                  const buildingFeature = turf.feature(b.geometry);
                   const buildingCenter = turf.centroid(
                     buildingFeature as turf.AllGeoJSON
                   );

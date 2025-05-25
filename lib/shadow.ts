@@ -1,11 +1,6 @@
 // lib/shadow.ts
 import * as turf from "@turf/turf";
-import { Feature, Polygon, Point, Position, LineString } from 'geojson';
-
-// We'll try to rely on types from '@turf/turf' itself or standard GeoJSON types
-// If specific types are still missing, we might need to import them from 'geojson'
-// e.g. import { Point, Polygon, Feature, Position, LineString } from 'geojson';
-// For now, let's see what @turf/turf v7 provides.
+import { Feature, Polygon, Point, Position } from "geojson";
 
 import { Building, Coordinates, Place } from "./types";
 import { SunPosition } from "@/hooks/useSunPosition";

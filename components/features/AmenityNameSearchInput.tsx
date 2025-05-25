@@ -60,7 +60,7 @@ export function AmenityNameSearchInput() {
       // The flag will be reset in handleInputChange, or we can reset it in another effect if needed,
       // but for typing, handleInputChange resetting it is usually fine.
     }
-  }, [globalAmenityNameQuery]); // Only depend on globalAmenityNameQuery
+  }, [globalAmenityNameQuery, localQuery]);
 
   return (
     <div className="relative w-full sm:max-w-xs">

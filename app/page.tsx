@@ -17,6 +17,7 @@ import { BookmarkListSheet } from "@/components/features/BookmarkListSheet";
 import { useSunAlerts } from "@/hooks/useSunAlerts"; // Import
 import { PlaceDetailSheet } from "@/components/features/PlaceDetailsSheet";
 import { FilterPanelSheet } from "@/components/features/FilterPanelSheet"; // IMPORT NEW
+import Image from "next/image";
 
 const MapComponentWithNoSSR = dynamic(
   () => import("@/components/map/MapComponent"),
@@ -55,7 +56,6 @@ export default function HomePage() {
     setBuildings,
     selectedLocation,
     userCoordinates,
-    isBookmarkSheetOpen,
     hasMapMoved,
     setHasMapMoved,
     setMapBoundsForQuery,
@@ -171,10 +171,13 @@ export default function HomePage() {
         <div className="w-full flex justify-between items-center">
           <div className="flex-shrink-0">
             <h1 className="text-xl font-semibold truncate">
-              <img
-                src="/usuncu-logo.png"
+              <Image
+                src="/usuncu-logo.png" // Must be in /public or imported
                 alt="Usuncu Logo"
-                className="h-8 inline-block"
+                width={40} // Provide width and height
+                height={42} // Adjust these to your logo's aspect ratio / desired display size
+                className="h-8 inline-block" // className might need adjustment
+                priority // Add if it's an LCP element (likely for a logo in header)
               />
             </h1>
           </div>
@@ -246,7 +249,7 @@ export default function HomePage() {
                   {/* New icon from lucide-react */}
                   <h3 className="text-xl font-semibold mb-2">No Spots Found</h3>
                   <p className="text-muted-foreground">
-                    We couldn't find any listed cafes, restaurants, or bars in
+                    We could not find any listed cafes, restaurants, or bars in
                     this specific map area.
                     <br />
                     Try zooming out, panning to a different location, or
