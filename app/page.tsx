@@ -16,6 +16,8 @@ import { useUserLocation } from "@/hooks/useUserLocation";
 import { FilterControls } from "@/components/features/FilterControls";
 import { BookmarkListSheet } from "@/components/features/BookmarkListSheet";
 import { useSunAlerts } from "@/hooks/useSunAlerts"; // Import
+import { PlaceDetailSheet } from "@/components/features/PlaceDetailsSheet";
+import { AmenityNameSearchInput } from "@/components/features/AmenityNameSearchInput";
 
 const MapComponentWithNoSSR = dynamic(
   () => import("@/components/map/MapComponent"),
@@ -164,7 +166,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-screen">
+    <div className="flex flex-col h-screen w-screen overflow-hidden">
       <header className="p-3 border-b flex flex-col sm:flex-row items-center gap-3 sm:gap-4 bg-background shadow-sm relative z-30">
         {/* Top Row: Logo & Theme/Location Buttons */}
         <div className="w-full flex justify-between items-center">
@@ -179,7 +181,7 @@ export default function HomePage() {
               />
             </h1>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-2 z-1000">
             <BookmarkListSheet />
             <Button
               variant="outline"
@@ -193,29 +195,32 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Bottom Row: Search & Filters */}
-        <div className="w-full flex flex-col sm:flex-row items-center gap-3 sm:gap-4">
-          <div className="flex-grow w-full sm:w-auto">
+        {/* Bottom Row: Location Search, Amenity Name Search & Filters */}
+        <div className="w-full grid grid-cols-1 md:grid-cols-3 items-center gap-3 sm:gap-4">
+          <div className="md:col-span-1">
             {" "}
-            {/* Search input container */}
+            {/* Location Search */}
             <LocationSearchInput />
           </div>
-          <div className="flex-shrink-0">
+          <div className="md:col-span-1">
             {" "}
-            {/* Filter controls container */}
+            {/* Amenity Name Search */}
+            <AmenityNameSearchInput />
+          </div>
+          <div className="md:col-span-1 flex md:justify-end">
+            {" "}
+            {/* Filter controls */}
             <FilterControls />
           </div>
         </div>
       </header>
 
       <div className="flex flex-1 relative overflow-hidden">
-        {" "}
         {/* Parent for map and potential side elements */}
         <main
-          className={`flex-1 relative transition-all duration-300 ease-in-out ${
-            isBookmarkSheetOpen ? "mr-[350px] sm:mr-[450px]" : "mr-0"
-          }`}
-          // Or if sheet opens from left: ml-[350px] sm:ml-[450px]
+          className={
+            "flex-1 relative transition-all duration-300 ease-in-out mr-0"
+          }
         >
           {isLoadingOsmData && mapZoom >= MIN_FETCH_ZOOM_LEVEL && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-20 space-y-4">
@@ -261,7 +266,7 @@ export default function HomePage() {
             )}
           {/* "Search This Area" Button */}
           {hasMapMoved && mapZoom >= MIN_FETCH_ZOOM_LEVEL && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000">
               <Button
                 onClick={handleSearchThisArea}
                 variant="secondary"
@@ -276,6 +281,7 @@ export default function HomePage() {
         </main>
       </div>
       <footer className="p-2 border-t text-center text-xs text-muted-foreground bg-background">
+        <PlaceDetailSheet />
         Map data ©{" "}
         <a
           href="https://www.openstreetmap.org/copyright"

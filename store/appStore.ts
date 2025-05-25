@@ -36,6 +36,8 @@ interface AppState {
   sunShadeFilter: SunShadeFilter;
   mapRef: L.Map | null;
   hasMapMoved: boolean;
+  selectedPlaceDetail: Place | null;
+  amenityNameQuery: string; // For filtering places by name
 
   // Actions
   setCurrentTime: (time: Date) => void;
@@ -67,6 +69,8 @@ interface AppState {
   ) => void;
   setIsBookmarkSheetOpen: (isOpen: boolean) => void;
   setHasMapMoved: (moved: boolean) => void;
+  setSelectedPlaceDetail: (place: Place | null) => void;
+  setAmenityNameQuery: (query: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -89,6 +93,8 @@ export const useAppStore = create<AppState>()(
       mapRef: null,
       isBookmarkSheetOpen: false,
       hasMapMoved: false,
+      selectedPlaceDetail: null, // Default to no place selected
+      amenityNameQuery: "", // Default to no name filter
 
       // Actions
       setCurrentTime: (time) => set({ currentTime: time }),
@@ -145,30 +151,30 @@ export const useAppStore = create<AppState>()(
           }
         }
       },
-      setMapCenterAndZoom: (center, zoom) => {
-        const currentBounds = get().mapBoundsForQuery;
-        // A simple heuristic: if bounds are already set (meaning data was fetched for an area),
-        // and the new center/zoom is different, then the map has moved relative to current data.
-        if (currentBounds) {
-          // More precise: check if new center is outside currentBounds, or zoom changed significantly
-          // For now, any user pan/zoom when data is loaded for an area will set hasMapMoved.
-          // This will be refined by the "Search This Area" button click resetting it.
-          set((state) => {
-            // Only set hasMapMoved to true if the new center/zoom is different
-            // from what's already stored, to avoid unnecessary state updates.
-            if (
-              state.mapCenter.lat !== center.lat ||
-              state.mapCenter.lng !== center.lng ||
-              state.mapZoom !== zoom
-            ) {
-              return { mapCenter: center, mapZoom: zoom, hasMapMoved: true };
-            }
-            return { mapCenter: center, mapZoom: zoom };
-          });
-        } else {
-          // If no data is loaded yet (no bounds), just update center/zoom
-          set({ mapCenter: center, mapZoom: zoom });
-        }
+      setMapCenterAndZoom: (newObservedCenter, newObservedZoom) => {
+        set((state) => {
+          const viewActuallyChanged = // This checks if the new view is different from what the store *thinks* the view should be
+            state.mapCenter.lat.toFixed(5) !==
+              newObservedCenter.lat.toFixed(5) ||
+            state.mapCenter.lng.toFixed(5) !==
+              newObservedCenter.lng.toFixed(5) ||
+            state.mapZoom !== newObservedZoom;
+
+          if (viewActuallyChanged) {
+            // Now, determine if this interaction means we've moved away from a data-loaded area.
+            // The "Search This Area" button should appear if mapBoundsForQuery *was* set (meaning data was loaded for an area)
+            // and the current view (newObservedCenter/Zoom) is now different.
+            const shouldSetHasMapMoved = !!state.mapBoundsForQuery;
+
+            return {
+              mapCenter: newObservedCenter, // Update store to reflect the map's actual current view
+              mapZoom: newObservedZoom,
+              hasMapMoved: shouldSetHasMapMoved, // This is the critical update
+            };
+          } else {
+            return {}; // No state change needed if observed view matches stored target view
+          }
+        });
       },
       setMapBoundsForQuery: (bounds) => set({ mapBoundsForQuery: bounds }),
 
@@ -185,7 +191,13 @@ export const useAppStore = create<AppState>()(
       setSunShadeFilter: (filter) => set({ sunShadeFilter: filter }),
       setMapRef: (map) => set({ mapRef: map }),
       setHasMapMoved: (moved) => set({ hasMapMoved: moved }),
-
+      setSelectedPlaceDetail: (place) => {
+        set({ selectedPlaceDetail: place });
+        // Optionally, if the detail sheet opens, ensure the bookmark sheet closes, or vice-versa
+        // if (place && get().isBookmarkSheetOpen) {
+        //   set({ isBookmarkSheetOpen: false });
+        // }
+      },
       processAndSetNewLocation: (locationData, isUserGps = false) => {
         if (!locationData) {
           set({
@@ -194,6 +206,7 @@ export const useAppStore = create<AppState>()(
             mapCenter: DEFAULT_MAP_CENTER,
             mapZoom: DEFAULT_MAP_ZOOM,
             mapBoundsForQuery: null,
+            selectedPlaceDetail: null,
             hasMapMoved: false,
           });
           return;
@@ -306,8 +319,15 @@ export const useAppStore = create<AppState>()(
           set({ places: [], buildings: [] });
         }
       },
-      setIsBookmarkSheetOpen: (isOpen) => set({ isBookmarkSheetOpen: isOpen }),
+      setIsBookmarkSheetOpen: (isOpen) => {
+        set({ isBookmarkSheetOpen: isOpen });
+        if (isOpen && get().selectedPlaceDetail) {
+          set({ selectedPlaceDetail: null });
+        }
+      },
+      setAmenityNameQuery: (query) => set({ amenityNameQuery: query }),
     }),
+
     {
       name: "sunseeker-storage", // name of the item in the storage (must be unique)
       storage: createJSONStorage(() => localStorage), // (optional) by default, 'localStorage' is used

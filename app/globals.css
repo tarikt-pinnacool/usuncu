@@ -145,13 +145,37 @@
 /* For Shadcn Sheet, the content is often in a div with data-state="open" */
 /* Find the specific selector for SheetContent in your rendered HTML */
 /* This is a common pattern for Radix-based components */
-div[data-radix-dialog-content], /* Dialogs and Sheets often share underlying Radix components */
+div[data-radix-dialog-content],
 div[data-radix-sheet-content] {
-  /* More specific for sheet if it exists */
-  z-index: 1000 !important; /* Very high for testing */
+  z-index: 50 !important; /* Or your chosen higher value like 100 */
 }
-/* Also ensure the overlay is high enough */
 div[data-radix-dialog-overlay],
 div[data-radix-sheet-overlay] {
-  z-index: 999 !important; /* Just below the content */
+  z-index: 49 !important; /* Just below the content */
+}
+
+.leaflet-tooltip {
+  background-color: var(--popover); /* Use your theme's popover background */
+  color: var(--popover-foreground);
+  border-color: var(--border);
+  border-radius: var(--radius-md);
+  padding: 4px 8px; /* Adjust padding */
+  font-size: 0.75rem; /* text-xs */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.leaflet-tooltip-top:before {
+  /* Arrow */
+  border-top-color: var(--border); /* Match border color */
+}
+.leaflet-tooltip h4,
+.leaflet-tooltip p {
+  margin: 0;
+  padding: 0;
+}
+
+.custom-place-icon {
+  /* Ensures the SVG scales nicely if you don't use fixed width/height in the SVG tag itself */
+}
+.custom-place-icon svg {
+  display: block; /* Good practice */
 }

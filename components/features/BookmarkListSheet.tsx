@@ -92,7 +92,7 @@ export function BookmarkListSheet() {
           )}
         </Button>
       </SheetTrigger>
-      <SheetContent className="w-[350px] sm:w-[450px] flex flex-col z-[100]">
+      <SheetContent className="w-[350px] sm:w-[450px] flex flex-col z-[1000]">
         <SheetHeader>
           <SheetTitle>My Bookmarked Spots</SheetTitle>
           <SheetDescription>
