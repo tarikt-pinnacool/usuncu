@@ -5,13 +5,11 @@ import { GeocodingResult } from "@/lib/types"; // Ensure this type matches
 const NOMINATIM_URL = "https://nominatim.openstreetmap.org/search";
 
 export async function GET(request: NextRequest) {
-  console.log("API Geocode Route HIT. Full URL:", request.url); // More specific log
   const searchParams = request.nextUrl.searchParams;
   const query = searchParams.get("q");
-  console.log("API Geocode Route: Extracted 'q' parameter:", query);
 
   if (!query) {
-    console.log("API Geocode Route: 'q' parameter is missing.");
+    ("API Geocode Route: 'q' parameter is missing.");
     return NextResponse.json(
       { error: 'Missing query parameter "q"' },
       { status: 400 }
@@ -21,7 +19,6 @@ export async function GET(request: NextRequest) {
   const nominatimApiUrl = `${NOMINATIM_URL}?q=${encodeURIComponent(
     query
   )}&format=jsonv2&addressdetails=0&limit=5&accept-language=en`;
-  console.log("API Geocode Route: Calling Nominatim URL:", nominatimApiUrl);
 
   try {
     const nominatimResponse = await fetch(nominatimApiUrl, {
@@ -46,7 +43,6 @@ export async function GET(request: NextRequest) {
     }
 
     const data: GeocodingResult[] = await nominatimResponse.json();
-    console.log("API Geocode Route: Nominatim response data (raw):", data);
 
     const filteredData = data
       .filter(
@@ -64,7 +60,6 @@ export async function GET(request: NextRequest) {
           (r.class === "boundary" && r.type === "administrative")
       )
       .slice(0, 5);
-    console.log("API Geocode Route: Filtered data count:", filteredData.length);
 
     return NextResponse.json(filteredData);
   } catch (error: any) {

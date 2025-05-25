@@ -45,7 +45,7 @@ export function parseOverpassResponse(elements: OsmElement[]): {
 } {
   const places: Place[] = [];
   const buildings: Building[] = [];
-  // console.log(`OSM PARSER: Received ${elements.length} elements from Overpass.`);
+  // (`OSM PARSER: Received ${elements.length} elements from Overpass.`);
 
   elements.forEach((el) => {
     const elId = `${el.type}/${el.id}`;
@@ -169,6 +169,6 @@ export function parseOverpassResponse(elements: OsmElement[]): {
       }
     }
   });
-  // console.log(`OSM PARSER: Parsed. Places: ${places.length}, Buildings: ${buildings.length}`);
+  // (`OSM PARSER: Parsed. Places: ${places.length}, Buildings: ${buildings.length}`);
   return { places, buildings };
 }

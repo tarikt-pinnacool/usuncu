@@ -159,7 +159,7 @@ const MapComponent = () => {
     const currentMap = mapInstanceRef.current;
     const newCenter = currentMap.getCenter();
     const newZoom = currentMap.getZoom();
-    // console.log("MapComponent: processMapViewChange. Event Center:", newCenter, "Event Zoom:", newZoom);
+    // ("MapComponent: processMapViewChange. Event Center:", newCenter, "Event Zoom:", newZoom);
     setMapCenterAndZoom({ lat: newCenter.lat, lng: newCenter.lng }, newZoom);
   }, [setMapCenterAndZoom]);
 
@@ -177,7 +177,7 @@ const MapComponent = () => {
       mapContainerRef.current &&
       !mapInstanceRef.current
     ) {
-      // console.log("MapComponent: Initializing map instance with stored center:", mapCenter, "zoom:", mapZoom);
+      // ("MapComponent: Initializing map instance with stored center:", mapCenter, "zoom:", mapZoom);
       const map = L.map(mapContainerRef.current).setView(
         [mapCenter.lat, mapCenter.lng],
         mapZoom
@@ -192,7 +192,7 @@ const MapComponent = () => {
       map.on("zoomend", debouncedProcessMapViewChange);
 
       return () => {
-        // console.log("MapComponent: Cleaning up map instance and listeners.");
+        // ("MapComponent: Cleaning up map instance and listeners.");
         if (map) {
           map.off("moveend", debouncedProcessMapViewChange);
           map.off("zoomend", debouncedProcessMapViewChange);
@@ -238,7 +238,7 @@ const MapComponent = () => {
   // 5. Effect for Popup Event Listeners
   useEffect(() => {
     if (!isLeafletLoaded || !mapInstanceRef.current) {
-      // console.log("Popup listener effect: Map or Leaflet not ready.");
+      // ("Popup listener effect: Map or Leaflet not ready.");
       return;
     }
 
@@ -271,12 +271,6 @@ const MapComponent = () => {
           // *** CRITICAL: Find the place from 'processedPlaces' ***
           const placeToDetail = processedPlaces.find((p) => p.id === placeId);
           if (placeToDetail) {
-            console.log(
-              "MapComponent: View Details Clicked for:",
-              placeToDetail.name,
-              "isInSun:",
-              placeToDetail.isInSun
-            );
             setIsBookmarkSheetOpen(false);
             setSelectedPlaceDetail(placeToDetail); // This place object has the latest isInSun
             map.closePopup();
@@ -368,7 +362,7 @@ const MapComponent = () => {
 
   // 6. Effect for CORE LOGIC (Shadow Calculation & processedPlaces Update)
   useEffect(() => {
-    // console.log(`CORE LOGIC: Triggered. Leaflet: ${isLeafletLoaded}, Sun: ${!!sunPosition}, Buildings: ${buildings.length}, AllPlaces: ${allPlacesFromStore.length}`);
+    // (`CORE LOGIC: Triggered. Leaflet: ${isLeafletLoaded}, Sun: ${!!sunPosition}, Buildings: ${buildings.length}, AllPlaces: ${allPlacesFromStore.length}`);
     if (!isLeafletLoaded || !mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
@@ -377,7 +371,7 @@ const MapComponent = () => {
       setShadowLayers([]);
       const anySunny = processedPlaces.some((p) => p.isInSun); // Check before potentially modifying processedPlaces
       if (!sunPosition && anySunny) {
-        // console.log("CORE LOGIC: Sun down, marking all processed as shaded.");
+        // ("CORE LOGIC: Sun down, marking all processed as shaded.");
         setProcessedPlaces(
           processedPlaces.map((p) => ({ ...p, isInSun: false }))
         );
@@ -388,7 +382,7 @@ const MapComponent = () => {
       ) {
         // This condition means: sun is down, we have places from the store,
         // and either processedPlaces is empty OR no places in processedPlaces were marked as sunny (e.g. first load at night)
-        // console.log("CORE LOGIC: Sun down initially, marking all from store as shaded.");
+        // ("CORE LOGIC: Sun down initially, marking all from store as shaded.");
         setProcessedPlaces(
           allPlacesFromStore.map((p) => ({
             ...p,
@@ -486,11 +480,6 @@ const MapComponent = () => {
         if (existingMarker) {
           // Update existing marker (e.g., icon, tooltip, popup content if necessary)
           existingMarker.setIcon(icon);
-          // Re-bind tooltip and popup to ensure content (like isBookmarked in popup) is fresh
-          // ... (bindTooltip and bindPopup logic as before, ensuring popup content uses current isBookmarked) ...
-          // You might need to store popupContent string generation in a helper
-          // and call existingMarker.setPopupContent(newPopupContent) if Leaflet supports it easily,
-          // or just re-bind. Re-binding is simpler.
           const tooltipContent = `
             <div class="p-0 m-0">
               <h4 class="font-semibold text-xs m-0 p-0">${
@@ -581,17 +570,28 @@ const MapComponent = () => {
             zIndexOffset: isSelected ? 2000 : isBookmarked ? 1000 : 0,
           }).addTo(map);
           const tooltipContent = `
-            <div class="p-0 m-0">
-              <h4 class="font-semibold text-xs m-0 p-0">${
-                place.name || "Unnamed Place"
-              }</h4>
-              <p class="text-xs text-muted-foreground m-0 p-0 capitalize">${
-                place.tags?.amenity?.replace(/_/g, " ") || "Place"
-              }</p>
-            </div>
+            <div class="custom-usuncu-tooltip p-2 rounded-md shadow-lg bg-popover text-popover-foreground border border-border text-xs">
+  <div class="flex items-center mb-0.5">
+    <!-- Optional Sun/Moon Icon if place.isInSun is available and you want it this small -->
+    <!-- ${
+      place.isInSun === true
+        ? '<svg class="w-3 h-3 text-orange-500 mr-1.5" ...sun_svg_path...</svg>'
+        : ""
+    } -->
+    <!-- ${
+      place.isInSun === false
+        ? '<svg class="w-3 h-3 text-blue-500 mr-1.5" ...moon_svg_path...</svg>'
+        : ""
+    } -->
+    <h5 class="font-semibold leading-tight truncate">${
+      place.name || "Unnamed Place"
+    }</h5>
+  </div>
+  <p class="text-muted-foreground capitalize leading-tight truncate">${
+    place.tags?.amenity?.replace(/_/g, " ") || "Place"
+  }</p>
+</div>
           `;
-          // ... (bindTooltip and bindPopup for new marker) ...
-          // ... (attach 'click' listener for detail sheet) ...
           existingMarker.bindTooltip(tooltipContent, {
             permanent: false, // Only show on hover
             direction: "top", // Position above the marker

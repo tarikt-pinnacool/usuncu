@@ -45,7 +45,7 @@ export function useSunAlerts() {
         // Removed buildings.length === 0 check here, as it might be empty if zoomed out
         return;
       }
-      //   console.log("Usuncu SunAlerts: Checking bookmarked places...");
+      //   ("Usuncu SunAlerts: Checking bookmarked places...");
       const now = Date.now();
       notifiedEventsRef.current = notifiedEventsRef.current.filter(
         (event) => now < event.predictedSunTime + PREDICTION_HORIZON_MS * 2

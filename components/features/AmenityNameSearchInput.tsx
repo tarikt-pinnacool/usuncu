@@ -23,7 +23,7 @@ export function AmenityNameSearchInput() {
 
   const debouncedSetGlobalQuery = useDebouncedCallback(
     (query: string) => {
-      // console.log("AmenityNameSearchInput: Debounced - Setting global query to:", query);
+      // ("AmenityNameSearchInput: Debounced - Setting global query to:", query);
       setGlobalAmenityNameQuery(query);
     },
     300 // 300ms debounce
@@ -31,7 +31,7 @@ export function AmenityNameSearchInput() {
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = event.target.value;
-    // console.log("AmenityNameSearchInput: Input changed (local):", newQuery);
+    // ("AmenityNameSearchInput: Input changed (local):", newQuery);
     setLocalQuery(newQuery); // Update local state immediately for responsive input
 
     // Ensure we don't trigger debounce if this change was due to syncing from global
@@ -43,7 +43,7 @@ export function AmenityNameSearchInput() {
   };
 
   const handleClearSearch = () => {
-    // console.log("AmenityNameSearchInput: Clearing search");
+    // ("AmenityNameSearchInput: Clearing search");
     setLocalQuery(""); // Clear local state immediately
     debouncedSetGlobalQuery.cancel(); // Cancel any pending debounced calls
     setGlobalAmenityNameQuery(""); // Update global store immediately
@@ -54,7 +54,7 @@ export function AmenityNameSearchInput() {
     // If the global query changes (and it's different from local input),
     // update the local input's value.
     if (globalAmenityNameQuery !== localQuery) {
-      // console.log("AmenityNameSearchInput: Syncing localQuery from global:", globalAmenityNameQuery);
+      // ("AmenityNameSearchInput: Syncing localQuery from global:", globalAmenityNameQuery);
       isSyncingRef.current = true; // Set flag to prevent debounced call from this update
       setLocalQuery(globalAmenityNameQuery);
       // The flag will be reset in handleInputChange, or we can reset it in another effect if needed,

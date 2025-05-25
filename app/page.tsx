@@ -28,11 +28,11 @@ const fetchOsmDataWithBounds = async (
   bounds: BoundingBox | null
 ): Promise<{ places: Place[]; buildings: Building[] }> => {
   if (!bounds) {
-    // console.log("fetchOsmDataWithBounds: No bounds provided, returning empty.");
+    // ("fetchOsmDataWithBounds: No bounds provided, returning empty.");
     return { places: [], buildings: [] };
   }
   const bboxStr = bounds.join(","); // S,W,N,E
-  // console.log(`fetchOsmDataWithBounds: Fetching for bbox: ${bboxStr}`);
+  // (`fetchOsmDataWithBounds: Fetching for bbox: ${bboxStr}`);
   const response = await fetch(`/api/osm?bbox=${bboxStr}`); // API will need to accept bbox
   if (!response.ok) {
     const errorData = await response.json();
@@ -42,7 +42,7 @@ const fetchOsmDataWithBounds = async (
     );
   }
   const data = await response.json();
-  // console.log(`fetchOsmDataWithBounds: Received ${data.places?.length} places, ${data.buildings?.length} buildings.`);
+  // (`fetchOsmDataWithBounds: Received ${data.places?.length} places, ${data.buildings?.length} buildings.`);
   return data;
 };
 
@@ -139,7 +139,7 @@ export default function HomePage() {
   // Initial location request on mount or if all location info is cleared
   useEffect(() => {
     if (!selectedLocation && !userCoordinates) {
-      // console.log("HomePage EFFECT: Requesting user location on initial mount / no location set.");
+      // ("HomePage EFFECT: Requesting user location on initial mount / no location set.");
       requestUserLocation();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -154,7 +154,7 @@ export default function HomePage() {
         currentMapBounds.getNorth(),
         currentMapBounds.getEast(),
       ];
-      // console.log("HomePage: 'Search This Area' clicked. New bounds:", newBounds);
+      // ("HomePage: 'Search This Area' clicked. New bounds:", newBounds);
       setMapBoundsForQuery(newBounds); // This will trigger TanStack Query
       setHasMapMoved(false); // Reset the flag
     } else if (mapZoom < MIN_FETCH_ZOOM_LEVEL) {
@@ -172,7 +172,7 @@ export default function HomePage() {
           <div className="flex-shrink-0">
             <h1 className="text-xl font-semibold truncate">
               <img
-                src="/logo_transparent.png"
+                src="/usuncu-logo.png"
                 alt="Usuncu Logo"
                 className="h-8 inline-block"
               />

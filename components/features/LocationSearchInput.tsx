@@ -34,12 +34,10 @@ export function LocationSearchInput() {
       }
       setIsLoadingSuggestions(true);
       setShowSuggestions(true); // Show suggestion box (even if it's just a loading state)
-      console.log(
-        "LocationSearchInput: Fetching suggestions for query:",
+      "LocationSearchInput: Fetching suggestions for query:",
         query,
         "URL:",
-        `/api/geocode?q=${encodeURIComponent(query)}`
-      );
+        `/api/geocode?q=${encodeURIComponent(query)}`;
 
       try {
         const response = await fetch(
