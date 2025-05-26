@@ -56,6 +56,7 @@ const TimeSlider = () => {
     }
     // We don't want localSliderValue in deps here, as this effect is about
     // global state dictating local state when not in manual mode.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentTime, isTimeManuallyControlled, hasMounted]);
 
   const handleSliderChange = (value: number[]) => {
@@ -68,6 +69,7 @@ const TimeSlider = () => {
   };
 
   const handleSliderCommit = (value: number[]) => {
+    return value;
     // This is called when the user releases the slider.
     // The setManualTime call in handleSliderChange already did the job.
     // We could potentially do a final definitive update here if needed,

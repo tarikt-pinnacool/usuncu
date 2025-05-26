@@ -1,5 +1,5 @@
 import * as turf from "@turf/turf";
-import { Feature, Polygon, Point, Position } from "geojson";
+import { Feature, Polygon, Position } from "geojson";
 import { Building, Coordinates, Place } from "./types";
 import { SunPosition } from "@/hooks/useSunPosition";
 
@@ -223,6 +223,7 @@ export function isLocationInSun(
 
 export function getRelevantShadowPointForPlace(
   place: Place,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   buildings: Building[] // buildings param currently not effectively used for Point amenities in a simple way
 ): Coordinates {
   // If the place itself is defined as a building outline (e.g., a large restaurant that is its own building)
