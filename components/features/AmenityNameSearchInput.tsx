@@ -64,6 +64,7 @@ export function AmenityNameSearchInput() {
     // IMPORTANT: Reset the flag after the effect runs.
     // This prepares it for the *next* internal debounced update.
     isInternalUpdateRef.current = false;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalAmenityNameQuery, debouncedSetGlobalQuery]); // Crucially, `localQuery` is NOT a dependency here.
 
   // The `useState` initialization ensures that `localQuery` is correctly set
@@ -75,6 +76,7 @@ export function AmenityNameSearchInput() {
     if (localQuery !== globalAmenityNameQuery) {
       setLocalQuery(globalAmenityNameQuery);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [globalAmenityNameQuery]); // Run this effect when globalAmenityNameQuery changes to sync initial state.
 
   return (

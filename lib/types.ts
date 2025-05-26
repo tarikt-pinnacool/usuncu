@@ -1,5 +1,5 @@
 // lib/types.ts
-import { Point, Polygon, LineString, MultiPolygon } from "geojson";
+import { Point, Polygon, LineString } from "geojson";
 
 export interface Coordinates {
   lat: number;

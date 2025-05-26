@@ -1,12 +1,12 @@
 // lib/osm.ts
 import { Place, Building, Coordinates } from "./types";
-import {
-  Position,
-  Point as GeoJsonPoint,
-  Polygon as GeoJsonPolygon,
-  LineString as GeoJsonLineString,
-  MultiPolygon as GeoJsonMultiPolygon, // Import MultiPolygon if you intend to create them
-} from "geojson";
+// import {
+// Position,
+// Point as GeoJsonPoint,
+// Polygon as GeoJsonPolygon,
+// LineString as GeoJsonLineString,
+// MultiPolygon as GeoJsonMultiPolygon, // Import MultiPolygon if you intend to create them
+// } from "geojson";
 import * as turf from "@turf/turf";
 
 // This is used by parseOverpassResponse to identify relevant amenities.
@@ -23,13 +23,42 @@ export const POI_AMENITIES_PARSER = [
   "cocktail_bar",
 ];
 
-interface OsmMember {
-  type: "node" | "way" | "relation";
-  ref?: number;
-  role?: string;
-  geometry?: { lat: number; lon: number }[];
+// interface OsmMember {
+//   type: "node" | "way" | "relation";
+//   ref?: number;
+//   role?: string;
+//   geometry?: { lat: number; lon: number }[];
+// }
+
+// interface OsmElement {
+//   type: "node" | "way" | "relation";
+//   id: number;
+//   lat?: number;
+//   lon?: number;
+//   tags?: Record<string, string>;
+//   nodes?: number[];
+//   members?: OsmMember[];
+//   geometry?: { lat: number; lon: number }[]; // For ways/relations from 'out geom'
+// }
+
+// // Simple coordinate equality check
+// function coordinatesEqual(coord1: Position, coord2: Position): boolean {
+//   // Add a small tolerance for floating point comparisons if necessary,
+//   // but for exact matches from OSM data, direct comparison is usually okay.
+//   return (
+//     coord1.length === coord2.length &&
+//     coord1[0] === coord2[0] &&
+//     coord1[1] === coord2[1]
+//   );
+// }
+
+// Minimal OSM geometry type
+interface OsmGeometry {
+  type: "Polygon" | "MultiPolygon";
+  coordinates: number[][][] | number[][][][];
 }
 
+// Minimal OSM element type for this file's usage
 interface OsmElement {
   type: "node" | "way" | "relation";
   id: number;
@@ -37,23 +66,12 @@ interface OsmElement {
   lon?: number;
   tags?: Record<string, string>;
   nodes?: number[];
-  members?: OsmMember[];
-  geometry?: { lat: number; lon: number }[]; // For ways/relations from 'out geom'
-}
-
-// Simple coordinate equality check
-function coordinatesEqual(coord1: Position, coord2: Position): boolean {
-  // Add a small tolerance for floating point comparisons if necessary,
-  // but for exact matches from OSM data, direct comparison is usually okay.
-  return (
-    coord1.length === coord2.length &&
-    coord1[0] === coord2[0] &&
-    coord1[1] === coord2[1]
-  );
+  members?: unknown[];
+  geometry?: OsmGeometry;
 }
 
 // Helper to get coordinates from an Overpass element (primarily for node-based places)
-function getCoordinates(element: any): Coordinates | null {
+function getCoordinates(element: OsmElement): Coordinates | null {
   if (element.lat && element.lon) {
     return { lat: element.lat, lng: element.lon };
   }
@@ -61,15 +79,17 @@ function getCoordinates(element: any): Coordinates | null {
 }
 
 // Helper to calculate centroid for polygon/multipolygon geometries
-function getCentroid(geometry: any): Coordinates | null {
+function getCentroid(geometry: OsmGeometry | undefined): Coordinates | null {
   if (!geometry || !geometry.type || !geometry.coordinates) return null;
 
   try {
     let geoJsonGeometry;
     if (geometry.type === "Polygon") {
-      geoJsonGeometry = turf.polygon(geometry.coordinates);
+      geoJsonGeometry = turf.polygon(geometry.coordinates as number[][][]);
     } else if (geometry.type === "MultiPolygon") {
-      geoJsonGeometry = turf.multiPolygon(geometry.coordinates);
+      geoJsonGeometry = turf.multiPolygon(
+        geometry.coordinates as number[][][][]
+      );
     } else {
       return null; // Not a polygon or multipolygon type we can centroid
     }
@@ -86,7 +106,7 @@ function getCentroid(geometry: any): Coordinates | null {
   }
 }
 
-export function parseOverpassResponse(data: any): {
+export function parseOverpassResponse(data: { elements: OsmElement[] }): {
   places: Place[];
   buildings: Building[];
 } {
@@ -95,7 +115,7 @@ export function parseOverpassResponse(data: any): {
 
   const elements = data.elements || [];
 
-  elements.forEach((element: any) => {
+  elements.forEach((element: OsmElement) => {
     // Handle Places (amenities)
     if (element.tags && element.tags.amenity) {
       let placeCenter: Coordinates | null = getCoordinates(element);
@@ -109,7 +129,7 @@ export function parseOverpassResponse(data: any): {
         places.push({
           id: String(element.id),
           type: element.type,
-          name: element.tags.name || null,
+          name: element.tags.name,
           center: placeCenter,
           tags: element.tags,
           isInSun: null,

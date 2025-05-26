@@ -211,6 +211,7 @@ const MapComponent = () => {
         setMapRef(null);
       };
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     isLeafletLoaded,
     debouncedProcessMapViewChange,
@@ -558,6 +559,7 @@ const MapComponent = () => {
     });
 
     setMarkerInstances(newMarkerInstancesState);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLeafletLoaded, processedPlaces, bookmarks, selectedPlaceDetail]);
 
   // 8. Effect for Toggling Marker Visibility (Based on Filters)
