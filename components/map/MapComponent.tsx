@@ -31,6 +31,8 @@ interface UsuncuButton extends HTMLButtonElement {
   _usuncuDetailHandler?: EventListener;
 }
 
+const MIN_ZOOM_FOR_SHADOWS = 16; // Define zoom threshold for showing shadows. Adjust as needed.
+
 const createLeafletIcon = (options: IconOptions): LType.DivIcon | undefined => {
   if (!L) return undefined;
 
@@ -358,6 +360,9 @@ const MapComponent = () => {
     shadowLayers.forEach((layer) => map.removeLayer(layer));
     const newRenderedShadowLayers: LType.GeoJSON[] = [];
 
+    // Use mapZoom from the store, which is updated on 'moveend' and 'zoomend'
+    const currentEffectiveZoom = mapZoom;
+
     // Condition to skip shadow calculation:
     // - No sunPosition data
     // - Sun is below horizon (or very close to it)
@@ -365,19 +370,21 @@ const MapComponent = () => {
     if (
       !sunPosition ||
       sunPosition.altitude <= MIN_SUN_ALTITUDE_RAD ||
-      buildings.length === 0
+      buildings.length === 0 ||
+      currentEffectiveZoom < MIN_ZOOM_FOR_SHADOWS
     ) {
+      shadowLayers.forEach((layer) => map.removeLayer(layer)); // Ensure old ones are gone
+      setShadowLayers([]); // Clear shadow layers state
+
       const targetIsInSun =
         !!sunPosition && sunPosition.altitude > MIN_SUN_ALTITUDE_RAD;
-      // console.log(`[MapComponent E6] Skipping shadow calc. Sun up: ${targetIsInSun}, Buildings: ${buildings.length}`);
-
+      // If zoomed out too far, or no buildings/sun, update places without shadow consideration
       const newProcessed = allPlacesFromStore.map((p) => ({
         ...p,
-        isInSun: targetIsInSun, // If sun is down, all are in shade. If sun up but no buildings, all in sun.
-        relevantShadowPoint: getRelevantShadowPointForPlace(p, []), // Pass empty buildings array
+        isInSun: targetIsInSun,
+        relevantShadowPoint: getRelevantShadowPointForPlace(p, []),
       }));
       setProcessedPlaces(newProcessed);
-      setShadowLayers([]); // Ensure local state tracking shadow layers is also empty
       return;
     }
 
@@ -385,19 +392,31 @@ const MapComponent = () => {
     buildings.forEach((building) => {
       const shadowFeature = calculateShadowPolygon(building, sunPosition);
       if (shadowFeature) {
+        // Add building ID to properties if needed for debugging
+        if (!shadowFeature.properties) shadowFeature.properties = {};
+        shadowFeature.properties.buildingId = building.id;
         currentShadowFeatures.push(
           shadowFeature as GeoJsonFeature<GeoJsonPolygon>
         );
       }
     });
 
-    if (L) {
+    if (L && currentShadowFeatures.length > 0) {
+      let shadowOpacity = 0.35;
+      // Optional: Adjust opacity based on sun altitude (Option 2 snippet)
+      if (sunPosition.altitude < Math.PI / 9) {
+        shadowOpacity = 0.25;
+      }
+      if (sunPosition.altitude < Math.PI / 18) {
+        shadowOpacity = 0.2;
+      }
+
       currentShadowFeatures.forEach((shadowGeoJson) => {
         const shadowLayer = L!
           .geoJSON(shadowGeoJson, {
             style: {
               fillColor: "#333333",
-              fillOpacity: 0.35,
+              fillOpacity: shadowOpacity, // Consider dynamic opacity here
               weight: 0,
               interactive: false,
             },
@@ -422,6 +441,7 @@ const MapComponent = () => {
     isLeafletLoaded,
     currentTime,
     setProcessedPlaces,
+    mapZoom,
   ]);
 
   // 7. Effect for Marker Creation/Updating (Based on processedPlaces)

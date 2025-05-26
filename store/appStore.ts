@@ -20,6 +20,7 @@ const MIN_ZOOM_LEVEL_FOR_FETCH = 13; // Set a realistic minimum zoom for fetchin
 
 interface AppState {
   currentTime: Date;
+  isTimeManuallyControlled: boolean;
   userCoordinates: Coordinates | null;
   isBookmarkSheetOpen: boolean;
 
@@ -54,6 +55,10 @@ interface AppState {
 
   // Actions
   setCurrentTime: (time: Date) => void;
+  setManualTime: (time: Date) => void; // For slider interaction
+  switchToLiveTime: () => void; // To revert to live time
+  setIsTimeManuallyControlled: (isManual: boolean) => void; // Direct setter if needed
+
   setUserCoordinates: (coords: Coordinates | null) => void;
 
   setSearchQuery: (query: string) => void;
@@ -106,6 +111,7 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       // Initial State
       currentTime: new Date(),
+      isTimeManuallyControlled: false,
       userCoordinates: null,
       searchQuery: "",
       geocodingResults: [],
@@ -132,7 +138,28 @@ export const useAppStore = create<AppState>()(
       amenityNameQuery: "",
 
       // Actions
-      setCurrentTime: (time) => set({ currentTime: time }),
+      setCurrentTime: (time) => {
+        // This action is primarily for the useCurrentTime hook (live updates)
+        // It should only update if time is NOT manually controlled.
+        if (!get().isTimeManuallyControlled) {
+          set({ currentTime: time });
+        }
+      },
+      setManualTime: (time) => {
+        set({ currentTime: time, isTimeManuallyControlled: true });
+      },
+      switchToLiveTime: () => {
+        set({ currentTime: new Date(), isTimeManuallyControlled: false });
+      },
+      setIsTimeManuallyControlled: (isManual) => {
+        // Added for direct control if needed
+        set({ isTimeManuallyControlled: isManual });
+        if (!isManual) {
+          // If switching back to auto, refresh time
+          set({ currentTime: new Date() });
+        }
+      },
+
       setUserCoordinates: (coords) => {
         set({ userCoordinates: coords });
         // If no explicit location selected and GPS is available, use GPS for initial view

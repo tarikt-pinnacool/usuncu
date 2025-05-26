@@ -2,23 +2,31 @@
 import { useEffect } from "react";
 import { useAppStore } from "@/store/appStore";
 
-/**
- * A hook that updates the current time in the Zustand store at a specified interval.
- * @param intervalMs The interval in milliseconds at which to update the time (default: 60000ms = 1 minute).
- */
 export function useCurrentTime(intervalMs: number = 60000) {
   const setCurrentTime = useAppStore((state) => state.setCurrentTime);
+  const isTimeManuallyControlled = useAppStore(
+    (state) => state.isTimeManuallyControlled
+  );
 
   useEffect(() => {
-    // Set the initial time immediately
-    setCurrentTime(new Date());
+    // Set the initial time immediately ONLY if not manually controlled
+    // Or, always set it, and let the manual control override if it happens later.
+    // For now, let's let setCurrentTime in the store handle the logic.
+    if (!isTimeManuallyControlled) {
+      setCurrentTime(new Date()); // This will only update if not manual due to logic in setCurrentTime
+    }
 
-    // Set up the interval to update the time
+    // If time is manually controlled, don't start the interval.
+    if (isTimeManuallyControlled) {
+      return; // Exit early, no interval needed
+    }
+
     const intervalId = setInterval(() => {
+      // setCurrentTime will internally check isTimeManuallyControlled
+      // so it won't update if the mode changed to manual after interval started.
       setCurrentTime(new Date());
     }, intervalMs);
 
-    // Clean up the interval when the component unmounts or the hook is re-run
     return () => clearInterval(intervalId);
-  }, [setCurrentTime, intervalMs]); // Dependencies for the effect
+  }, [setCurrentTime, intervalMs, isTimeManuallyControlled]); // Add isTimeManuallyControlled to dependencies
 }

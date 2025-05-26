@@ -223,68 +223,38 @@ export function isLocationInSun(
 
 export function getRelevantShadowPointForPlace(
   place: Place,
-  buildings: Building[]
+  buildings: Building[] // buildings param currently not effectively used for Point amenities in a simple way
 ): Coordinates {
-  // Assuming place.geometry is a GeoJSON Geometry object compatible with Turf
+  // If the place itself is defined as a building outline (e.g., a large restaurant that is its own building)
+  // and has a polygon geometry, use its centroid.
   if (
-    place.isBuildingOutline &&
+    place.isBuildingOutline && // This flag would need to be set during OSM parsing if a place IS a building
     place.geometry &&
-    place.geometry.type === "Polygon"
+    place.geometry.type === "Polygon" &&
+    place.geometry.coordinates &&
+    place.geometry.coordinates.length > 0
   ) {
     try {
-      // turf.centroid works with Geometry or Feature
-      const centroid = turf.centroid(place.geometry as Polygon); // Cast to Polygon for clarity
+      const placePolygon = turf.polygon(
+        place.geometry.coordinates as Position[][]
+      );
+      const centroid = turf.centroid(placePolygon);
       return {
         lat: centroid.geometry.coordinates[1],
         lng: centroid.geometry.coordinates[0],
       };
     } catch (e) {
       console.warn(
-        `Centroid calculation failed for place ${place.id}, using original center. Error: ${e}`
+        `Centroid calculation failed for place polygon ${place.id}, using original center. Error: ${e}`
       );
-      return place.center;
+      return place.center; // Fallback to place.center from OSM node/way center
     }
   }
 
-  if (place.geometry && place.geometry.type === "Point") {
-    const placePointCoordinates = (place.geometry as Point).coordinates; // Get coordinates from Point geometry
-    for (const building of buildings) {
-      if (
-        building.geometry &&
-        building.geometry.type === "Polygon" &&
-        building.geometry.coordinates &&
-        building.geometry.coordinates[0] &&
-        building.geometry.coordinates[0].length > 0
-      ) {
-        try {
-          const buildingPolygon = building.geometry as Polygon; // Cast to Polygon
-
-          if (
-            turf.booleanPointInPolygon(placePointCoordinates, buildingPolygon)
-          ) {
-            // Create a LineString from the building's exterior ring
-            const buildingExteriorRing = building.geometry
-              .coordinates[0] as Position[];
-            const buildingLineString = turf.lineString(buildingExteriorRing);
-            const unitsOption: { units: TurfUnits } = { units: "meters" };
-
-            const closestPointOnEdge = turf.nearestPointOnLine(
-              buildingLineString,
-              placePointCoordinates,
-              unitsOption
-            );
-            return {
-              lat: closestPointOnEdge.geometry.coordinates[1],
-              lng: closestPointOnEdge.geometry.coordinates[0],
-            };
-          }
-        } catch (e) {
-          console.warn(
-            `Error processing building ${building.id} for place ${place.id} shadow point: ${e}`
-          );
-        }
-      }
-    }
-  }
+  // For all other cases (most point amenities like cafes, bars not explicitly mapped as their own building outline),
+  // simply use their defined center point.
+  // The previous logic for checking if a point is inside another building and finding nearest edge
+  // can be complex and might not always yield the desired "seating area" point.
+  // Relying on the accuracy of building shadows around the place.center is often a more robust starting point.
   return place.center;
 }

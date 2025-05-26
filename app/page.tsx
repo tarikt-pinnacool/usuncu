@@ -20,6 +20,7 @@ import Image from "next/image";
 import { getUnfetchedAreas, isCoordinateInBbox } from "@/lib/geo";
 import * as turf from "@turf/turf";
 import { Feature as GeoJsonFeature, Polygon as GeoJsonPolygon } from "geojson";
+import TimeSlider from "@/components/features/TimeSlider";
 
 const MapComponentWithNoSSR = dynamic(
   () => import("@/components/map/MapComponent"),
@@ -214,32 +215,42 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col h-screen w-screen overflow-hidden">
-      <header className="p-3 border-b flex flex-col sm:flex-row items-center gap-3 sm:gap-4 bg-background shadow-sm relative z-30">
-        <div className="w-full flex justify-between items-center">
-          <div className="flex-shrink-0">
-            <h1 className="text-xl font-semibold truncate">
-              <Image
-                src="/usuncu-logo.png"
-                alt="Usuncu Logo"
-                width={40}
-                height={42}
-                className="h-8 inline-block"
-                priority
-              />
+      <header className="p-3 border-b flex flex-col items-center gap-3 bg-background shadow-sm relative z-30">
+        <div className="w-full flex flex-col sm:flex-row justify-between items-center gap-3">
+          <div className="flex-shrink-0 flex items-center">
+            <Image
+              src="/usuncu-logo.png"
+              alt="Usuncu Logo"
+              width={36}
+              height={38}
+              className="h-8 inline-block mr-2"
+              priority
+            />
+            <h1 className="text-xl font-semibold truncate hidden sm:inline">
+              Usuncu
             </h1>
           </div>
-          <div className="flex items-center space-x-2">
-            <BookmarkListSheet />
-            <Button
-              variant="outline"
-              size="icon"
-              onClick={requestUserLocation}
-              title="Use my current location"
-            >
-              <LocateFixedIcon className="h-5 w-5" />
-            </Button>
-            <ThemeToggleButton />
-            <FilterPanelSheet />
+          {/* Time Slider and Main Controls Area */}
+          <div className="flex-grow flex flex-col sm:flex-row items-center justify-center sm:justify-end gap-2 w-full sm:w-auto">
+            {/* Time Slider Component */}
+            <div className="w-full sm:w-auto order-2 sm:order-1">
+              <TimeSlider />
+            </div>
+
+            {/* Right-aligned controls */}
+            <div className="flex items-center space-x-2 order-1 sm:order-2 self-end sm:self-center">
+              <BookmarkListSheet />
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={requestUserLocation}
+                title="Use my current location"
+              >
+                <LocateFixedIcon className="h-5 w-5" />
+              </Button>
+              <ThemeToggleButton />
+              <FilterPanelSheet />
+            </div>
           </div>
         </div>
       </header>
