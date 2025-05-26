@@ -11,6 +11,7 @@ import {
   calculateShadowPolygon,
   getRelevantShadowPointForPlace,
   isLocationInSun,
+  MIN_SUN_ALTITUDE_RAD,
 } from "@/lib/shadow";
 import { Feature as GeoJsonFeature, Polygon as GeoJsonPolygon } from "geojson";
 import { useDebouncedCallback } from "use-debounce";
@@ -353,18 +354,30 @@ const MapComponent = () => {
     if (!isLeafletLoaded || !mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
+    // Clear previous shadows before any calculations
     shadowLayers.forEach((layer) => map.removeLayer(layer));
     const newRenderedShadowLayers: LType.GeoJSON[] = [];
 
-    if (!sunPosition || buildings.length === 0) {
-      const targetIsInSun = !!sunPosition;
+    // Condition to skip shadow calculation:
+    // - No sunPosition data
+    // - Sun is below horizon (or very close to it)
+    // - No buildings loaded for the current view
+    if (
+      !sunPosition ||
+      sunPosition.altitude <= MIN_SUN_ALTITUDE_RAD ||
+      buildings.length === 0
+    ) {
+      const targetIsInSun =
+        !!sunPosition && sunPosition.altitude > MIN_SUN_ALTITUDE_RAD;
+      // console.log(`[MapComponent E6] Skipping shadow calc. Sun up: ${targetIsInSun}, Buildings: ${buildings.length}`);
+
       const newProcessed = allPlacesFromStore.map((p) => ({
         ...p,
-        isInSun: targetIsInSun,
-        relevantShadowPoint: getRelevantShadowPointForPlace(p, []),
+        isInSun: targetIsInSun, // If sun is down, all are in shade. If sun up but no buildings, all in sun.
+        relevantShadowPoint: getRelevantShadowPointForPlace(p, []), // Pass empty buildings array
       }));
       setProcessedPlaces(newProcessed);
-      setShadowLayers([]);
+      setShadowLayers([]); // Ensure local state tracking shadow layers is also empty
       return;
     }
 
@@ -383,8 +396,8 @@ const MapComponent = () => {
         const shadowLayer = L!
           .geoJSON(shadowGeoJson, {
             style: {
-              fillColor: "#555555",
-              fillOpacity: 0.25,
+              fillColor: "#333333",
+              fillOpacity: 0.35,
               weight: 0,
               interactive: false,
             },
