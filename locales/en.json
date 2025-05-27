@@ -1,0 +1,42 @@
+{
+  "appTitle": "Usuncu EN",
+  "altText": {
+    "usuncuLogo": "Usuncu Logo"
+  },
+  "tooltips": {
+    "useMyLocation": "Use my current location"
+  },
+  "buttons": {
+    "searchThisArea": "Search This Area"
+  },
+  "mapMessages": {
+    "exploringNewAreas": "Exploring new areas near {{location}}...",
+    "yourCurrentArea": "your current area",
+    "zoomInPrompt": {
+      "title": "Zoom in further to find spots!",
+      "details": "Current zoom: {{currentZoom}}. Min level: {{minLevel}}."
+    }
+  },
+  "noSpotsFound": {
+    "title": "No Spots Found Here",
+    "description": "We couldn't find any listed cafes, restaurants, or bars in this specific map area. Try exploring a different location.",
+    "osmNotice": "(Data from OpenStreetMap. Accuracy may vary.)"
+  },
+  "footer": {
+    "mapDataAttribution": "Map data",
+    "contributors": "contributors",
+    "appSlogan": "Usuncu App - Find your spot in the sun (or shade)!"
+  },
+  "toasts": {
+    "noNewPlacesInExploredArea": "No new places found in the recently explored area.",
+    "failedToLoadPlaces": "Failed to load places: {{message}}",
+    "zoomInToSearchLevel": "Please zoom in to at least level {{level}} to search this area."
+  },
+  "languagePicker": {
+    "ariaLabel": "Change language"
+  },
+  "languages": {
+    "en": "English",
+    "bhs": "BHS"
+  }
+}

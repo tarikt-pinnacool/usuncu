@@ -5,6 +5,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import QueryProvider from "@/components/QueryProvider";
+import { I18nProvider } from "@/context/i18nContext";
+import { defaultLocale } from "@/locales";
+import { ClientLangUpdater } from "@/components/ClientLangUpdater";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -19,21 +22,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang={defaultLocale} suppressHydrationWarning>
       <body className={inter.className}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <QueryProvider>
-            {" "}
-            {/* WRAP with QueryProvider */}
-            {children}
-          </QueryProvider>
-          <SonnerToaster richColors position="top-right" />
-        </ThemeProvider>
+        <I18nProvider>
+          <ClientLangUpdater />
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <QueryProvider>{children}</QueryProvider>
+            <SonnerToaster richColors position="top-right" />
+          </ThemeProvider>
+        </I18nProvider>
       </body>
     </html>
   );

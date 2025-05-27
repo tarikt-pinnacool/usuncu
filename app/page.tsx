@@ -21,6 +21,10 @@ import { getUnfetchedAreas, isCoordinateInBbox } from "@/lib/geo";
 import * as turf from "@turf/turf";
 import { Feature as GeoJsonFeature, Polygon as GeoJsonPolygon } from "geojson";
 import TimeSlider from "@/components/features/TimeSlider";
+import { MapOverlayMessage } from "@/components/map/MapOverlayMessage";
+import { ZoomInIcon, SearchXIcon, InfoIcon } from "lucide-react";
+import { LanguagePicker } from "@/components/features/LanguagePicker";
+import { useTranslation } from "@/context/i18nContext";
 
 const MapComponentWithNoSSR = dynamic(
   () => import("@/components/map/MapComponent"),
@@ -93,10 +97,13 @@ const fetchOsmDataForUnfetchedAreas = async (
 };
 
 export default function HomePage() {
+  const { t } = useTranslation();
+
   const {
     mapBoundsForQuery,
     mapZoom,
     mapRef,
+    places,
     setPlaces,
     setBuildings,
     allFetchedPlaces,
@@ -137,7 +144,16 @@ export default function HomePage() {
     isError,
     error,
     isSuccess,
+    isFetched,
   } = queryResult;
+
+  // Derived state for "No Spots Found" condition
+  const showNoSpotsFoundMessage =
+    !isLoadingOsmData && // Not currently loading new data
+    mapZoom >= MIN_FETCH_ZOOM_LEVEL && // Zoomed in enough
+    isFetched && // A query has completed (either success or error, but it ran)
+    // newOsmData?.fetchedBbox !== null && // A fetch for some area (related to current view) happened
+    places.length === 0; // And no places are currently in the viewport-specific list
 
   useEffect(() => {
     if (isSuccess && newOsmData && newOsmData.fetchedBbox) {
@@ -220,14 +236,14 @@ export default function HomePage() {
           <div className="flex-shrink-0 flex items-center">
             <Image
               src="/usuncu-logo.png"
-              alt="Usuncu Logo"
+              alt={t("altText")}
               width={36}
               height={38}
               className="h-8 inline-block mr-2"
               priority
             />
             <h1 className="text-xl font-semibold truncate hidden sm:inline">
-              Usuncu
+              {t("appTitle")}
             </h1>
           </div>
           {/* Time Slider and Main Controls Area */}
@@ -238,13 +254,14 @@ export default function HomePage() {
             </div>
 
             {/* Right-aligned controls */}
-            <div className="flex items-center space-x-2 order-1 sm:order-2 self-end sm:self-center">
+            <div className="flex items-center space-x-2 order-1 sm:order-2 self-end sm:self-center mb-32">
+              <LanguagePicker />
               <BookmarkListSheet />
               <Button
                 variant="outline"
                 size="icon"
                 onClick={requestUserLocation}
-                title="Use my current location"
+                title={t("tooltips.useMyLocation")}
               >
                 <LocateFixedIcon className="h-5 w-5" />
               </Button>
@@ -261,51 +278,57 @@ export default function HomePage() {
             "flex-1 relative transition-all duration-300 ease-in-out mr-0"
           }
         >
+          {/* Loading indicator for OSM Data */}
           {isLoadingOsmData &&
             mapBoundsForQuery &&
             mapZoom >= MIN_FETCH_ZOOM_LEVEL && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm z-20 space-y-4">
                 <Loader2 className="h-12 w-12 animate-spin text-primary" />
                 <p className="text-lg text-muted-foreground">
-                  Exploring new areas near{" "}
-                  {selectedLocation?.display_name || "your current area"}...
+                  {t("mapMessages.exploringNewAreas", {
+                    location:
+                      selectedLocation?.display_name || "your current area",
+                  })}
                 </p>
               </div>
             )}
-          {mapZoom < MIN_FETCH_ZOOM_LEVEL && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-destructive/90 text-destructive-foreground p-3 rounded-md shadow-lg z-20 text-sm">
-              <p>
-                Please zoom in further (current zoom: {mapZoom.toFixed(0)}) to
-                load places.
-              </p>
-            </div>
-          )}
-          {!isLoadingOsmData &&
-            mapBoundsForQuery &&
-            mapZoom >= MIN_FETCH_ZOOM_LEVEL &&
-            allFetchedPlaces.length === 0 &&
-            (selectedLocation || userCoordinates) &&
-            newOsmData &&
-            newOsmData.fetchedBbox &&
-            newOsmData.places.length === 0 &&
-            fetchedBoundsHistory.length > 0 && (
-              <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-8 z-10 pointer-events-none">
-                <div className="bg-background/90 p-6 rounded-lg shadow-xl">
-                  <SearchX className="h-16 w-16 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-semibold mb-2">No Spots Found</h3>
-                  <p className="text-muted-foreground">
-                    We could not find any listed cafes, restaurants, or bars in
-                    this specific map area.
-                    <br />
-                    Try zooming out, panning to a different location, or
-                    searching for another area.
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-4">
-                    (Data from OpenStreetMap. Accuracy may vary.)
-                  </p>
-                </div>
-              </div>
+          {/* "Zoom In" Message */}
+          {mapZoom < MIN_FETCH_ZOOM_LEVEL &&
+            !isLoadingOsmData && ( // Also hide if actively loading
+              <MapOverlayMessage
+                variant="warning"
+                position="top-center"
+                icon={<ZoomInIcon className="h-6 w-6" />}
+              >
+                <p className="font-medium">Zoom in further to find spots!</p>
+                <p className="text-xs opacity-90">
+                  Current zoom: {mapZoom.toFixed(0)}. Min level:{" "}
+                  {MIN_FETCH_ZOOM_LEVEL}.
+                </p>
+              </MapOverlayMessage>
             )}
+
+          {/* "No Spots Found" Message */}
+          {showNoSpotsFoundMessage && (
+            <MapOverlayMessage
+              variant="default" // Or "info"
+              position="center" // Or "top-center" if preferred
+              icon={<SearchXIcon className="h-10 w-10" />}
+              className="max-w-md text-center" // Example custom class for sizing
+            >
+              <h3 className="text-lg font-semibold mb-1">
+                No Spots Found Here
+              </h3>
+              <p className="text-sm opacity-90 mb-2">
+                We couldn't find any listed cafes, restaurants, or bars in this
+                specific map area. Try exploring a different location.
+              </p>
+              <p className="text-xs opacity-70">
+                (Data from OpenStreetMap. Accuracy may vary.)
+              </p>
+            </MapOverlayMessage>
+          )}
+
           {hasMapMoved && mapZoom >= MIN_FETCH_ZOOM_LEVEL && (
             <div className="absolute top-4 left-1/2 -translate-x-1/2 z-1000">
               <Button

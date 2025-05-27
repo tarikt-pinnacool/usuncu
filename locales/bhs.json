@@ -1,0 +1,42 @@
+{
+  "appTitle": "Usuncu BHS",
+  "altText": {
+    "usuncuLogo": "Usuncu Logo"
+  },
+  "tooltips": {
+    "useMyLocation": "Koristi moju trenutnu lokaciju"
+  },
+  "buttons": {
+    "searchThisArea": "Pretraži ovu oblast"
+  },
+  "mapMessages": {
+    "exploringNewAreas": "Istražujem nova područja blizu {{location}}...",
+    "yourCurrentArea": "vašeg trenutnog područja",
+    "zoomInPrompt": {
+      "title": "Približite za pronalazak mjesta!",
+      "details": "Trenutni zoom: {{currentZoom}}. Min nivo: {{minLevel}}."
+    }
+  },
+  "noSpotsFound": {
+    "title": "Nema Pronađenih Mjesta",
+    "description": "Nismo mogli pronaći kafiće, restorane ili barove na ovoj specifičnoj lokaciji. Pokušajte istražiti drugu lokaciju.",
+    "osmNotice": "(Podaci sa OpenStreetMap. Tačnost može varirati.)"
+  },
+  "footer": {
+    "mapDataAttribution": "Podaci mape",
+    "contributors": "saradnici",
+    "appSlogan": "Usuncu App - Nađi svoje mjesto na suncu (ili u hladu)!"
+  },
+  "toasts": {
+    "noNewPlacesInExploredArea": "Nema novih mjesta pronađenih u nedavno istraženom području.",
+    "failedToLoadPlaces": "Učitavanje mjesta nije uspjelo: {{message}}",
+    "zoomInToSearchLevel": "Molimo približite prikaz barem do nivoa {{level}} da biste pretražili ovo područje."
+  },
+  "languagePicker": {
+    "ariaLabel": "Promijeni jezik"
+  },
+  "languages": {
+    "en": "Engleski",
+    "bhs": "BHS"
+  }
+}
