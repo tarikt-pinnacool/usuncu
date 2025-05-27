@@ -22,6 +22,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { useTranslation } from "@/context/i18nContext";
 
 // Helper to format tags nicely (can be expanded)
 const formatTags = (
@@ -60,6 +61,7 @@ export function PlaceDetailSheet() {
     removeBookmark,
     setIsBookmarkSheetOpen, // To close bookmark sheet if this opens
   } = useAppStore();
+  const { t } = useTranslation();
 
   if (!selectedPlaceDetail) {
     return null; // Don't render anything if no place is selected
@@ -97,7 +99,7 @@ export function PlaceDetailSheet() {
         <SheetHeader className="p-6 pb-4 border-b">
           <div className="flex justify-between items-start">
             <SheetTitle className="text-xl font-bold mr-2 break-words">
-              {place.name || "Unnamed Place"}
+              {place.name || t("placeDetails.unnamedPlace")}
             </SheetTitle>
             <SheetClose asChild>
               <Button variant="ghost" size="icon" className="-mt-1 -mr-1">
@@ -106,7 +108,8 @@ export function PlaceDetailSheet() {
             </SheetClose>
           </div>
           <SheetDescription className="capitalize text-sm">
-            {place.tags?.amenity?.replace(/_/g, " ") || "Place details"}
+            {place.tags?.amenity?.replace(/_/g, " ") ||
+              t("placeDetails.placeDetails")}
           </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-6 space-y-4">
@@ -126,19 +129,21 @@ export function PlaceDetailSheet() {
               <Moon className="h-6 w-6 text-slate-500" />
             )}
             <span className="font-medium">
-              Currently:{" "}
+              {t("placeDetails.currently")}{" "}
               {place.isInSun === null
-                ? "Checking status..."
+                ? t("placeDetails.checkingStatus")
                 : place.isInSun
-                ? "In the Sun"
-                : "In the Shade"}
+                ? t("placeDetails.inTheSun")
+                : t("placeDetails.inTheShade")}
             </span>
           </div>
 
           {/* Address */}
           {(place.tags?.["addr:street"] || place.tags?.["addr:city"]) && (
             <div>
-              <h4 className="text-sm font-semibold mb-1">Address</h4>
+              <h4 className="text-sm font-semibold mb-1">
+                {t("placeDetails.address")}
+              </h4>
               <p className="text-sm text-muted-foreground">
                 {place.tags["addr:street"] || ""}{" "}
                 {place.tags["addr:housenumber"] || ""}
@@ -154,7 +159,9 @@ export function PlaceDetailSheet() {
           {/* Cuisine */}
           {place.tags?.cuisine && (
             <div>
-              <h4 className="text-sm font-semibold mb-1">Cuisine</h4>
+              <h4 className="text-sm font-semibold mb-1">
+                {t("placeDetails.cuisine")}
+              </h4>
               <p className="text-sm text-muted-foreground capitalize">
                 {place.tags.cuisine.replace(/_/g, " ")}
               </p>
@@ -164,7 +171,9 @@ export function PlaceDetailSheet() {
           {/* Other Tags */}
           {displayableTags.length > 0 && (
             <div>
-              <h4 className="text-sm font-semibold mb-1">More Info</h4>
+              <h4 className="text-sm font-semibold mb-1">
+                {t("placeDetails.moreInfo")}
+              </h4>
               <ul className="list-disc list-inside space-y-0.5 text-sm text-muted-foreground">
                 {displayableTags.map((tag) => (
                   <li key={tag.key}>
@@ -187,7 +196,8 @@ export function PlaceDetailSheet() {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Visit Website <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                {t("placeDetails.visitWebsite")}{" "}
+                <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
               </a>
             </Button>
           )}
@@ -195,7 +205,8 @@ export function PlaceDetailSheet() {
         <SheetFooter className="p-4 border-t flex flex-col sm:flex-row gap-2 justify-end">
           <Button variant="outline" asChild>
             <a href={directionsUrl} target="_blank" rel="noopener noreferrer">
-              <MapPin className="h-4 w-4 mr-2" /> Get Directions
+              <MapPin className="h-4 w-4 mr-2" />{" "}
+              {t("placeDetails.getDirections")}
             </a>
           </Button>
           <Button
@@ -205,7 +216,9 @@ export function PlaceDetailSheet() {
             <Star
               className={`h-4 w-4 mr-2 ${isBookmarked ? "fill-current" : ""}`}
             />
-            {isBookmarked ? "Bookmarked" : "Bookmark"}
+            {isBookmarked
+              ? t("placeDetails.bookmarked")
+              : t("placeDetails.bookmark")}
           </Button>
         </SheetFooter>
       </SheetContent>

@@ -13,12 +13,12 @@
     "exploringNewAreas": "Istražujem nova područja blizu {{location}}...",
     "yourCurrentArea": "vašeg trenutnog područja",
     "zoomInPrompt": {
-      "title": "Približite za pronalazak mjesta!",
-      "details": "Trenutni zoom: {{currentZoom}}. Min nivo: {{minLevel}}."
+      "title": "Približite prikaz za pronalazak mjesta!",
+      "details": "Trenutni zoom: {{currentZoom}}. Min. nivo: {{minLevel}}."
     }
   },
   "noSpotsFound": {
-    "title": "Nema Pronađenih Mjesta",
+    "title": "Ovdje Nema Pronađenih Mjesta",
     "description": "Nismo mogli pronaći kafiće, restorane ili barove na ovoj specifičnoj lokaciji. Pokušajte istražiti drugu lokaciju.",
     "osmNotice": "(Podaci sa OpenStreetMap. Tačnost može varirati.)"
   },
@@ -30,7 +30,16 @@
   "toasts": {
     "noNewPlacesInExploredArea": "Nema novih mjesta pronađenih u nedavno istraženom području.",
     "failedToLoadPlaces": "Učitavanje mjesta nije uspjelo: {{message}}",
-    "zoomInToSearchLevel": "Molimo približite prikaz barem do nivoa {{level}} da biste pretražili ovo područje."
+    "zoomInToSearchLevel": "Molimo približite prikaz barem do nivoa {{level}} da biste pretražili ovo područje.",
+    "sunAlertsBookmarksEnabled": "Obavještenja o suncu za označena mjesta su omogućena!",
+    "sunAlertsBookmarksDisabled": "Obavještenja o suncu za označena mjesta su onemogućena.",
+    "panningToPlace": "Pozicioniranje na {{placeName}}"
+  },
+  "bookmarkedPlace": {
+    "title": "Označeno Mjesto"
+  },
+  "bookmarks": {
+    "viewBookmarks": "Prikaži Označena Mjesta"
   },
   "languagePicker": {
     "ariaLabel": "Promijeni jezik"
@@ -38,5 +47,97 @@
   "languages": {
     "en": "Engleski",
     "bhs": "BHS"
+  },
+  "bookmarkSheet": {
+    "title": "Moja Označena Mjesta",
+    "description": "Vaša omiljena sunčana (ili sjenovita) mjesta. Kliknite za prikaz na mapi.",
+    "enableSunAlerts": "Omogući Obavještenja o Suncu",
+    "notificationsBlocked": "Obavještenja blokirana od strane pretraživača.",
+    "emptyTitle": "Još niste označili nijedno mjesto.",
+    "emptyDescription": "Pronađite mjesto na mapi i kliknite zvjezdicu u njegovom info prozoru!",
+    "unnamedPlace": "Neimenovano Mjesto",
+    "placeLabel": "Mjesto",
+    "goToPlace": "Idi na mjesto",
+    "removedToast": "{{name}} uklonjeno iz označenih.",
+    "remove": "Ukloni",
+    "close": "Zatvori"
+  },
+  "filterPanel": {
+    "trigger": "Filteri i Pretraga",
+    "title": "Pronađi Svoje Mjesto",
+    "description": "Pretražite nove lokacije ili filtrirajte mjesta u trenutnom prikazu.",
+    "searchNewLocation": "Pretraži Novu Lokaciju",
+    "filterByName": "Filtriraj po Nazivu u Trenutnom Prikazu",
+    "sunShadeStatus": "Status Sunce / Hlad",
+    "noPlaces": "Nijedno mjesto ne odgovara trenutnim filterima u ovoj oblasti mape.",
+    "unnamedPlace": "Neimenovano Mjesto",
+    "placeLabel": "Mjesto",
+    "sun": "Sunce",
+    "shade": "Hlad",
+    "checking": "Provjeravam..."
+  },
+  "placeDetails": {
+    "unnamedPlace": "Neimenovano Mjesto",
+    "placeDetails": "Detalji mjesta",
+    "currently": "Trenutno:",
+    "checkingStatus": "Provjeravam status...",
+    "inTheSun": "Na Suncu",
+    "inTheShade": "U Hladu",
+    "address": "Adresa",
+    "cuisine": "Kuhinja",
+    "moreInfo": "Više Informacija",
+    "visitWebsite": "Posjeti Web Stranicu",
+    "getDirections": "Prikaži Upute",
+    "bookmarked": "Označeno",
+    "bookmark": "Označi"
+  },
+  "amenityNameSearch": {
+    "placeholder": "Pretraži naziv u trenutnom prikazu...",
+    "clear": "Očisti pretragu naziva"
+  },
+  "filterControls": {
+    "label": "Filtriraj mjesta po suncu/hladu",
+    "ariaLabel": "Filtriraj po suncu ili hladu",
+    "sunAria": "Prikaži na suncu",
+    "shadeAria": "Prikaži u hladu",
+    "allAria": "Prikaži sve",
+    "sun": "Sunce",
+    "shade": "Hlad",
+    "all": "Sve"
+  },
+  "locationSearch": {
+    "placeholder": "Pretraži grad...",
+    "clear": "Očisti pretragu lokacije",
+    "searching": "Pretražujem...",
+    "noResults": "Nema rezultata za"
+  },
+  "mapComponent": {
+    "unnamedPlace": "Neimenovano Mjesto",
+    "placeLabel": "Mjesto",
+    "removedToast": "{{name}} uklonjeno iz označenih.",
+    "addedToast": "{{name}} dodano u označene!",
+    "removeBookmark": "Ukloni oznaku",
+    "addBookmark": "Dodaj oznaku",
+    "cuisine": "Kuhinja",
+    "address": "Adresa",
+    "currently": "Trenutno:",
+    "checking": "Provjeravam...",
+    "inTheSun": "Na Suncu",
+    "inTheShade": "U Hladu",
+    "viewMoreDetails": "Prikaži Više Detalja"
+  },
+  "themeToggle": {
+    "toggle": "Promijeni temu",
+    "light": "Svijetla",
+    "dark": "Tamna",
+    "system": "Sistemska"
+  },
+  "layout": {
+    "title": "U suncu",
+    "description": "Pronađi sunčana ili sjenovita mjesta u svom gradu."
+  },
+  "timeSlider": {
+    "buttonTitle": "Idi na uživo",
+    "title": "Uživo"
   }
 }

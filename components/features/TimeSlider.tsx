@@ -8,8 +8,10 @@ import { useAppStore } from "@/store/appStore";
 import { format } from "date-fns";
 import { PlayIcon, SunIcon } from "lucide-react";
 import { useHasMounted } from "@/hooks/useHasMounted";
+import { useTranslation } from "@/context/i18nContext";
 
 const TimeSlider = () => {
+  const { t } = useTranslation();
   const {
     currentTime,
     isTimeManuallyControlled,
@@ -108,7 +110,7 @@ const TimeSlider = () => {
           variant={isTimeManuallyControlled ? "outline" : "secondary"}
           size="sm"
           onClick={switchToLiveTime}
-          title="Go to Live Time"
+          title={t("timeSlider.buttonTitle")}
           className="w-28"
         >
           {isTimeManuallyControlled ? (
@@ -116,7 +118,7 @@ const TimeSlider = () => {
           ) : (
             <SunIcon className="h-4 w-4 mr-1.5 animate-pulse text-orange-500" />
           )}
-          Live
+          {t("timeSlider.title")}
         </Button>
         <div className="text-sm font-medium tabular-nums bg-muted px-3 py-1.5 rounded-md w-[60px] text-center">
           {displayedTime}

@@ -16,6 +16,7 @@ import {
 import { Feature as GeoJsonFeature, Polygon as GeoJsonPolygon } from "geojson";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
+import { useTranslation } from "@/context/i18nContext";
 
 let L: typeof LType | undefined = undefined;
 
@@ -136,6 +137,7 @@ const MapComponent = () => {
     Map<string, LType.Marker>
   >(new Map());
   const [shadowLayers, setShadowLayers] = useState<LType.GeoJSON[]>([]);
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -264,10 +266,18 @@ const MapComponent = () => {
           const isBookmarked = bookmarks.includes(placeId);
           if (isBookmarked) {
             removeBookmark(placeId);
-            toast.success(`"${placeName || "Place"}" removed from bookmarks.`);
+            toast.success(
+              t("mapComponent.removedToast", {
+                name: placeName || t("mapComponent.placeLabel"),
+              })
+            );
           } else {
             addBookmark(placeId);
-            toast.success(`"${placeName || "Place"}" added to bookmarks!`);
+            toast.success(
+              t("mapComponent.addedToast", {
+                name: placeName || t("mapComponent.placeLabel"),
+              })
+            );
           }
           map.closePopup();
         }
@@ -349,6 +359,7 @@ const MapComponent = () => {
     allPlacesFromStore,
     setSelectedPlaceDetail,
     setIsBookmarkSheetOpen,
+    t,
   ]);
 
   // 6. Effect for CORE LOGIC (Shadow Calculation & processedPlaces Update)
@@ -486,11 +497,11 @@ const MapComponent = () => {
             <div class="custom-usuncu-tooltip p-2 rounded-md shadow-lg bg-popover text-popover-foreground border border-border text-xs">
   <div class="flex items-center mb-0.5">
     <h5 class="font-semibold leading-tight truncate">${
-      place.name || "Unnamed Place"
+      place.name || t("mapComponent.unnamedPlace")
     }</h5>
   </div>
   <p class="text-muted-foreground capitalize leading-tight truncate">${
-    place.tags?.amenity?.replace(/_/g, " ") || "Place"
+    place.tags?.amenity?.replace(/_/g, " ") || t("mapComponent.placeLabel")
   }</p>
 </div>
           `;
@@ -500,17 +511,22 @@ const MapComponent = () => {
             <div class="flex justify-between items-start">
               <div>
                 <h3 class="font-semibold text-md mb-0.5">${
-                  place.name || "Unnamed Place"
+                  place.name || t("mapComponent.unnamedPlace")
                 }</h3>
                 <p class="text-xs text-muted-foreground capitalize mb-1">${
-                  place.tags?.amenity?.replace(/_/g, " ") || "Place"
+                  place.tags?.amenity?.replace(/_/g, " ") ||
+                  t("mapComponent.placeLabel")
                 }</p>
               </div>
               <button
                 class="popup-bookmark-button p-1 -mr-1 -mt-1 text-muted-foreground hover:text-primary"
                 data-place-id="${place.id}"
-                data-place-name="${place.name || "Place"}"
-                title="${isBookmarked ? "Remove bookmark" : "Add bookmark"}"
+                data-place-name="${place.name || t("mapComponent.placeLabel")}"
+                title="${
+                  isBookmarked
+                    ? t("mapComponent.removeBookmark")
+                    : t("mapComponent.addBookmark")
+                }"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="${
                   isBookmarked ? "currentColor" : "none"
@@ -521,29 +537,32 @@ const MapComponent = () => {
             </div>
             ${
               place.tags?.cuisine
-                ? `<p class="text-xs capitalize"><span class="font-medium">Cuisine:</span> ${place.tags.cuisine.replace(
-                    /_/g,
-                    " "
-                  )}</p>`
+                ? `<p class="text-xs capitalize"><span class="font-medium">${t(
+                    "mapComponent.cuisine"
+                  )}:</span> ${place.tags.cuisine.replace(/_/g, " ")}</p>`
                 : ""
             }
             ${
               place.tags?.["addr:street"]
-                ? `<p class="text-xs"><span class="font-medium">Address:</span> ${
-                    place.tags["addr:street"]
-                  } ${place.tags?.["addr:housenumber"] || ""}</p>`
+                ? `<p class="text-xs"><span class="font-medium">${t(
+                    "mapComponent.address"
+                  )}:</span> ${place.tags["addr:street"]} ${
+                    place.tags?.["addr:housenumber"] || ""
+                  }</p>`
                 : ""
             }
-            <p class="text-sm font-medium mt-1.5">Currently: ${
-              place.isInSun === null
-                ? "Checking..."
-                : place.isInSun
-                ? "☀️ In the Sun"
-                : "🌙 In the Shade"
-            }</p>
+            <p class="text-sm font-medium mt-1.5">${t(
+              "mapComponent.currently"
+            )} ${
+        place.isInSun === null
+          ? t("mapComponent.checking")
+          : place.isInSun
+          ? `☀️ ${t("mapComponent.inTheSun")}`
+          : `🌙 ${t("mapComponent.inTheShade")}`
+      }</p>
             <button class="mt-2 p-1 text-xs text-blue-600 hover:underline view-details-button-popup" data-place-id="${
               place.id
-            }">View More Details</button>
+            }">${t("mapComponent.viewMoreDetails")}</button>
           </div>
         `;
 
@@ -593,7 +612,7 @@ const MapComponent = () => {
 
     setMarkerInstances(newMarkerInstancesState);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLeafletLoaded, processedPlaces, bookmarks, selectedPlaceDetail]);
+  }, [isLeafletLoaded, processedPlaces, bookmarks, selectedPlaceDetail, t]);
 
   // 8. Effect for Toggling Marker Visibility (Based on Filters)
   useEffect(() => {

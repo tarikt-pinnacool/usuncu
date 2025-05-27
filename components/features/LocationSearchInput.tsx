@@ -10,6 +10,7 @@ import { useAppStore } from "@/store/appStore";
 import { GeocodingResult } from "@/lib/types";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
+import { useTranslation } from "@/context/i18nContext";
 
 export function LocationSearchInput() {
   const {
@@ -23,6 +24,8 @@ export function LocationSearchInput() {
 
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
+
+  const { t } = useTranslation();
 
   const fetchSuggestions = useCallback(
     async (query: string) => {
@@ -115,7 +118,7 @@ export function LocationSearchInput() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Search city or town..."
+          placeholder={t("locationSearch.placeholder")}
           value={searchQuery}
           onChange={handleInputChange}
           onFocus={() =>
@@ -129,6 +132,7 @@ export function LocationSearchInput() {
             size="icon"
             className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
             onClick={handleClearSearch}
+            title={t("locationSearch.clear")}
           >
             <X className="h-4 w-4" />
           </Button>
@@ -142,7 +146,7 @@ export function LocationSearchInput() {
             {isLoadingSuggestions && (
               <div className="flex items-center justify-center p-4">
                 <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-                <span className="ml-2">Searching...</span>
+                <span className="ml-2">{t("locationSearch.searching")}</span>
               </div>
             )}
             {!isLoadingSuggestions &&
@@ -150,7 +154,7 @@ export function LocationSearchInput() {
               searchQuery.trim().length >= 3 && (
                 <p className="p-4 text-sm text-center text-muted-foreground">
                   <p>
-                    No results found for
+                    {t("locationSearch.noResults")}{" "}
                     <span className="font-semibold">{searchQuery}</span>.
                   </p>
                 </p>

@@ -20,6 +20,7 @@ import { Place } from "@/lib/types";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { LocationSearchInput } from "./LocationSearchInput"; // <--- NEW: Import LocationSearchInput
+import { useTranslation } from "@/context/i18nContext";
 
 export function FilterPanelSheet() {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,6 +33,7 @@ export function FilterPanelSheet() {
     mapRef,
     bookmarks,
   } = useAppStore();
+  const { t } = useTranslation();
 
   const placesToList = useMemo(() => {
     const nameQueryLower = amenityNameQuery.toLowerCase().trim();
@@ -82,20 +84,19 @@ export function FilterPanelSheet() {
   return (
     <Sheet open={isOpen} onOpenChange={setIsOpen}>
       <SheetTrigger asChild>
-        {/* Potentially update button text/icon to be more generic "Search & Filters" */}
         <Button variant="outline" className="h-9 px-3 sm:h-10 sm:px-4">
           <SlidersHorizontal className="h-4 w-4 sm:mr-2" />
-          <span className="hidden sm:inline">Filters & Search</span>{" "}
-          {/* <--- NEW: Updated text for clarity */}
+          <span className="hidden sm:inline">
+            {t("filterPanel.trigger")}
+          </span>{" "}
         </Button>
       </SheetTrigger>
       <SheetContent className="w-[380px] sm:w-[450px] flex flex-col p-0 z-[1050] h-full">
         <SheetHeader className="p-4 sm:p-6 pb-3 border-b">
           <div className="flex justify-between items-center">
             <SheetTitle className="text-lg sm:text-xl">
-              Find Your Spot
+              {t("filterPanel.title")}
             </SheetTitle>{" "}
-            {/* <--- NEW: More generic title */}
             <SheetClose asChild>
               <Button
                 variant="ghost"
@@ -107,44 +108,37 @@ export function FilterPanelSheet() {
             </SheetClose>
           </div>
           <SheetDescription className="text-xs sm:text-sm">
-            Search new locations or refine places in your current view.
+            {t("filterPanel.description")}
           </SheetDescription>{" "}
-          {/* <--- NEW: Updated description */}
         </SheetHeader>
 
         <div className="p-4 sm:p-6 space-y-6 border-b">
-          {/* <--- NEW: Global Location Search Section --- */}
           <div>
             <h4 className="text-sm font-medium mb-2 text-muted-foreground">
-              Search New Location
+              {t("filterPanel.searchNewLocation")}
             </h4>
-            <LocationSearchInput /> {/* <--- NEW: Added LocationSearchInput */}
+            <LocationSearchInput />
           </div>
-          {/* <--- END NEW Section --- */}
-
-          {/* Existing "Search by Name in View" section */}
           <div>
             <h4 className="text-sm font-medium mb-2 text-muted-foreground">
-              Filter by Name in Current View
+              {t("filterPanel.filterByName")}
             </h4>{" "}
-            {/* <--- NEW: Updated heading for clarity */}
             <AmenityNameSearchInput />
           </div>
           <div className="pt-4">
             <h4 className="text-sm font-medium mb-3 text-muted-foreground">
-              Sun / Shade Status
+              {t("filterPanel.sunShadeStatus")}
             </h4>
             <FilterControls />
           </div>
         </div>
 
-        {/* List of Filtered Places */}
         <ScrollArea className="flex-1 px-4 sm:px-6 py-4 min-h-0">
           {placesToList.length === 0 && (
             <div className="pt-10 text-center">
               <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-3" />
               <p className="text-sm text-muted-foreground">
-                No places match your current filters in this map area.
+                {t("filterPanel.noPlaces")}
               </p>
             </div>
           )}
@@ -160,10 +154,11 @@ export function FilterPanelSheet() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h5 className="font-semibold text-sm leading-tight">
-                        {place.name || "Unnamed Place"}
+                        {place.name || t("filterPanel.unnamedPlace")}
                       </h5>
                       <p className="text-xs text-muted-foreground capitalize">
-                        {place.tags?.amenity?.replace(/_/g, " ") || "Place"}
+                        {place.tags?.amenity?.replace(/_/g, " ") ||
+                          t("filterPanel.placeLabel")}
                       </p>
                     </div>
                     {isBookmarked && (
@@ -177,7 +172,7 @@ export function FilterPanelSheet() {
                         className="bg-orange-500/80 hover:bg-orange-500 text-white text-xs"
                       >
                         <Sun className="h-3 w-3 mr-1" />
-                        Sun
+                        {t("filterPanel.sun")}
                       </Badge>
                     )}
                     {place.isInSun === false && (
@@ -186,12 +181,12 @@ export function FilterPanelSheet() {
                         className="bg-sky-600/80 hover:bg-sky-600 text-white text-xs"
                       >
                         <Moon className="h-3 w-3 mr-1" />
-                        Shade
+                        {t("filterPanel.shade")}
                       </Badge>
                     )}
                     {place.isInSun === null && (
                       <Badge variant="outline" className="text-xs">
-                        Checking...
+                        {t("filterPanel.checking")}
                       </Badge>
                     )}
                   </div>

@@ -21,11 +21,13 @@ import { BellRing } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Switch } from "@radix-ui/react-switch";
 import { Label } from "@radix-ui/react-label";
+import { useTranslation } from "@/context/i18nContext";
 
 export function BookmarkListSheet() {
+  const { t } = useTranslation();
   const {
     bookmarks,
-    places, // Corrected: use 'places' from the store
+    places,
     removeBookmark,
     processAndSetNewLocation,
     isBookmarkSheetOpen,
@@ -54,12 +56,12 @@ export function BookmarkListSheet() {
       }
       setSunAlertsEnabled(true);
       localStorage.setItem("sunAlertsEnabled", "true");
-      toast.success("Sun alerts for bookmarks enabled!");
+      toast.success(t("toasts.sunAlertsBookmarksEnabled"));
     } else {
       // Trying to disable
       setSunAlertsEnabled(false);
       localStorage.setItem("sunAlertsEnabled", "false");
-      toast.info("Sun alerts for bookmarks disabled.");
+      toast.success(t("toasts.sunAlertsBookmarksDisabled"));
     }
   };
 
@@ -73,17 +75,25 @@ export function BookmarkListSheet() {
       const locationData = {
         lat: place.center.lat,
         lng: place.center.lng,
-        displayName: place.name || "Bookmarked Place",
+        displayName: place.name || t("bookmarkedPlace.title"),
       };
       processAndSetNewLocation(locationData, false);
-      toast.info(`Panning to ${place.name || "bookmarked spot"}`);
+      toast.info(
+        t("toasts.panningToPlace", {
+          placeName: place.name || t("bookmarkedPlace.title"),
+        })
+      );
     }
   };
 
   return (
     <Sheet open={isBookmarkSheetOpen} onOpenChange={setIsBookmarkSheetOpen}>
       <SheetTrigger asChild onClick={() => setIsBookmarkSheetOpen(true)}>
-        <Button variant="outline" size="icon" title="View Bookmarks">
+        <Button
+          variant="outline"
+          size="icon"
+          title={t("bookmarks.viewBookmarks")}
+        >
           <Bookmark className="h-5 w-5" />
           {bookmarks.length > 0 && (
             <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
@@ -94,10 +104,8 @@ export function BookmarkListSheet() {
       </SheetTrigger>
       <SheetContent className="w-[350px] sm:w-[450px] flex flex-col z-[1000]">
         <SheetHeader>
-          <SheetTitle>My Bookmarked Spots</SheetTitle>
-          <SheetDescription>
-            Your favorite sunny (or shady) places. Click to view on map.
-          </SheetDescription>
+          <SheetTitle>{t("bookmarkSheet.title")}</SheetTitle>
+          <SheetDescription>{t("bookmarkSheet.description")}</SheetDescription>
           <div className="mt-4 p-3 border-t flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <BellRing
@@ -108,7 +116,7 @@ export function BookmarkListSheet() {
                 }`}
               />
               <Label htmlFor="sun-alerts-toggle" className="text-sm">
-                Enable Sun Alerts
+                {t("bookmarkSheet.enableSunAlerts")}
               </Label>
             </div>
             <Switch
@@ -120,7 +128,7 @@ export function BookmarkListSheet() {
           </div>
           {permission === "denied" && (
             <p className="text-xs text-destructive">
-              Notifications blocked by browser.
+              {t("bookmarkSheet.notificationsBlocked")}
             </p>
           )}
         </SheetHeader>
@@ -128,10 +136,10 @@ export function BookmarkListSheet() {
           <div className="flex-1 flex flex-col items-center justify-center text-center">
             <Bookmark className="h-16 w-16 text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              You haven&apos;t bookmarked any spots yet.
+              {t("bookmarkSheet.emptyTitle")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              Find a spot on the map and click the star in its popup!
+              {t("bookmarkSheet.emptyDescription")}
             </p>
           </div>
         ) : (
@@ -144,10 +152,11 @@ export function BookmarkListSheet() {
                 <div className="flex justify-between items-start">
                   <div>
                     <h4 className="font-semibold text-sm">
-                      {place.name || "Unnamed Place"}
+                      {place.name || t("bookmarkSheet.unnamedPlace")}
                     </h4>
                     <p className="text-xs text-muted-foreground capitalize">
-                      {place.tags?.amenity?.replace(/_/g, " ") || "Place"}
+                      {place.tags?.amenity?.replace(/_/g, " ") ||
+                        t("bookmarkSheet.placeLabel")}
                     </p>
                   </div>
                   <SheetClose asChild>
@@ -155,7 +164,7 @@ export function BookmarkListSheet() {
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      title="Go to place"
+                      title={t("bookmarkSheet.goToPlace")}
                       onClick={() => handleGoToPlace(place)}
                     >
                       <MapPin className="h-4 w-4" />
@@ -170,11 +179,14 @@ export function BookmarkListSheet() {
                     onClick={() => {
                       removeBookmark(place.id);
                       toast.success(
-                        `"${place.name || "Place"}" removed from bookmarks.`
+                        t("bookmarkSheet.removedToast", {
+                          name: place.name || t("bookmarkSheet.placeLabel"),
+                        })
                       );
                     }}
                   >
-                    <Trash2 className="h-3.5 w-3.5 mr-1.5" /> Remove
+                    <Trash2 className="h-3.5 w-3.5 mr-1.5" />{" "}
+                    {t("bookmarkSheet.remove")}
                   </Button>
                 </div>
               </div>
@@ -183,7 +195,7 @@ export function BookmarkListSheet() {
         )}
         <SheetFooter className="mt-auto pt-4 border-t">
           <SheetClose asChild>
-            <Button variant="outline">Close</Button>
+            <Button variant="outline">{t("bookmarkSheet.close")}</Button>
           </SheetClose>
         </SheetFooter>
       </SheetContent>

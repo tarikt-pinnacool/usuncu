@@ -6,7 +6,7 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue, // We'll use this for the displayed value
+  // SelectValue, // We'll use this for the displayed value
 } from "@/components/ui/select";
 import { useTranslation } from "@/context/i18nContext";
 import { locales, Locale } from "@/locales";

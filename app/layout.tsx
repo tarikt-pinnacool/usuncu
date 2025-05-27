@@ -8,12 +8,13 @@ import QueryProvider from "@/components/QueryProvider";
 import { I18nProvider } from "@/context/i18nContext";
 import { defaultLocale } from "@/locales";
 import { ClientLangUpdater } from "@/components/ClientLangUpdater";
+import { DynamicHead } from "@/components/DynamicHead";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "usuncu",
-  description: "Find sunny or shady spots in your city.",
+  title: "U suncu",
+  description: "Pronađi sunčana ili sjenovita mjesta u svom gradu.",
 };
 
 export default function RootLayout({
@@ -25,6 +26,7 @@ export default function RootLayout({
     <html lang={defaultLocale} suppressHydrationWarning>
       <body className={inter.className}>
         <I18nProvider>
+          <DynamicHead />
           <ClientLangUpdater />
           <ThemeProvider
             attribute="class"

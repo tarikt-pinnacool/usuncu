@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import { ThemeToggleButton } from "@/components/theme-toggle-button";
 import { Button } from "@/components/ui/button";
-import { Loader2, LocateFixedIcon, RefreshCw, SearchX } from "lucide-react";
+import { Loader2, LocateFixedIcon, RefreshCw } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
 import dynamic from "next/dynamic";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -22,7 +22,7 @@ import * as turf from "@turf/turf";
 import { Feature as GeoJsonFeature, Polygon as GeoJsonPolygon } from "geojson";
 import TimeSlider from "@/components/features/TimeSlider";
 import { MapOverlayMessage } from "@/components/map/MapOverlayMessage";
-import { ZoomInIcon, SearchXIcon, InfoIcon } from "lucide-react";
+import { ZoomInIcon, SearchXIcon } from "lucide-react";
 import { LanguagePicker } from "@/components/features/LanguagePicker";
 import { useTranslation } from "@/context/i18nContext";
 
@@ -224,7 +224,7 @@ export default function HomePage() {
       setHasMapMoved(false);
     } else if (mapZoom < MIN_FETCH_ZOOM_LEVEL) {
       toast.info(
-        `Please zoom in to at least level ${MIN_FETCH_ZOOM_LEVEL} to search this area.`
+        t("toasts.zoomInToSearchLevel", { level: MIN_FETCH_ZOOM_LEVEL })
       );
     }
   };
@@ -287,7 +287,8 @@ export default function HomePage() {
                 <p className="text-lg text-muted-foreground">
                   {t("mapMessages.exploringNewAreas", {
                     location:
-                      selectedLocation?.display_name || "your current area",
+                      selectedLocation?.display_name ||
+                      t("mapMessages.yourCurrentArea"),
                   })}
                 </p>
               </div>
@@ -300,10 +301,12 @@ export default function HomePage() {
                 position="top-center"
                 icon={<ZoomInIcon className="h-6 w-6" />}
               >
-                <p className="font-medium">Zoom in further to find spots!</p>
+                {t("mapMessages.zoomInPrompt.title")}
                 <p className="text-xs opacity-90">
-                  Current zoom: {mapZoom.toFixed(0)}. Min level:{" "}
-                  {MIN_FETCH_ZOOM_LEVEL}.
+                  {t("mapMessages.zoomInPrompt.details", {
+                    currentZoom: mapZoom.toFixed(0),
+                    minLevel: MIN_FETCH_ZOOM_LEVEL,
+                  })}
                 </p>
               </MapOverlayMessage>
             )}
@@ -317,14 +320,13 @@ export default function HomePage() {
               className="max-w-md text-center" // Example custom class for sizing
             >
               <h3 className="text-lg font-semibold mb-1">
-                No Spots Found Here
+                {t("noSpotsFound.title")}
               </h3>
               <p className="text-sm opacity-90 mb-2">
-                We couldn't find any listed cafes, restaurants, or bars in this
-                specific map area. Try exploring a different location.
+                {t("noSpotsFound.description")}
               </p>
               <p className="text-xs opacity-70">
-                (Data from OpenStreetMap. Accuracy may vary.)
+                {t("noSpotsFound.osmNotice")}
               </p>
             </MapOverlayMessage>
           )}
@@ -337,7 +339,7 @@ export default function HomePage() {
                 className="shadow-lg"
               >
                 <RefreshCw className="mr-2 h-4 w-4" />
-                Search This Area
+                {t("buttons.searchThisArea")}
               </Button>
             </div>
           )}
@@ -346,7 +348,7 @@ export default function HomePage() {
       </div>
       <footer className="p-2 border-t text-center text-xs text-muted-foreground bg-background">
         <PlaceDetailSheet />
-        Map data ©{" "}
+        {t("footer.mapDataAttribution")} ©{" "}
         <a
           href="https://www.openstreetmap.org/copyright"
           target="_blank"
@@ -355,7 +357,7 @@ export default function HomePage() {
         >
           OpenStreetMap
         </a>{" "}
-        contributors. Usuncu App - Find your spot in the sun (or shade)!
+        {t("footer.contributors")}. {t("footer.appSlogan")}
       </footer>
     </div>
   );

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Search, X } from "lucide-react";
 import { useAppStore } from "@/store/appStore";
 import { useDebouncedCallback } from "use-debounce";
+import { useTranslation } from "@/context/i18nContext";
 
 export function AmenityNameSearchInput() {
   const globalAmenityNameQuery = useAppStore((state) => state.amenityNameQuery);
@@ -31,6 +32,8 @@ export function AmenityNameSearchInput() {
     },
     300 // 300ms debounce
   );
+
+  const { t } = useTranslation();
 
   const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newQuery = event.target.value;
@@ -85,7 +88,7 @@ export function AmenityNameSearchInput() {
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           type="text"
-          placeholder="Search name in current view..."
+          placeholder={t("amenityNameSearch.placeholder")}
           value={localQuery} // Controlled by local state
           onChange={handleInputChange}
           className="pl-10 pr-10 w-full"
@@ -96,7 +99,7 @@ export function AmenityNameSearchInput() {
             size="icon"
             className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2"
             onClick={handleClearSearch}
-            title="Clear name search"
+            title={t("amenityNameSearch.clear")}
           >
             <X className="h-4 w-4" />
           </Button>

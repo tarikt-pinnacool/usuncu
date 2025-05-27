@@ -30,7 +30,16 @@
   "toasts": {
     "noNewPlacesInExploredArea": "No new places found in the recently explored area.",
     "failedToLoadPlaces": "Failed to load places: {{message}}",
-    "zoomInToSearchLevel": "Please zoom in to at least level {{level}} to search this area."
+    "zoomInToSearchLevel": "Please zoom in to at least level {{level}} to search this area.",
+    "sunAlertsBookmarksEnabled": "Sun alerts for bookmarks enabled!",
+    "sunAlertsBookmarksDisabled": "Sun alerts for bookmarks disabled.",
+    "panningToPlace": "Panning to {{placeName}}"
+  },
+  "bookmarkedPlace": {
+    "title": "Bookmarked Place"
+  },
+  "bookmarks": {
+    "viewBookmarks": "View Bookmarks"
   },
   "languagePicker": {
     "ariaLabel": "Change language"
@@ -38,5 +47,97 @@
   "languages": {
     "en": "English",
     "bhs": "BHS"
+  },
+  "bookmarkSheet": {
+    "title": "My Bookmarked Spots",
+    "description": "Your favorite sunny (or shady) places. Click to view on map.",
+    "enableSunAlerts": "Enable Sun Alerts",
+    "notificationsBlocked": "Notifications blocked by browser.",
+    "emptyTitle": "You haven't bookmarked any spots yet.",
+    "emptyDescription": "Find a spot on the map and click the star in its popup!",
+    "unnamedPlace": "Unnamed Place",
+    "placeLabel": "Place",
+    "goToPlace": "Go to place",
+    "removedToast": "{{name}} removed from bookmarks.",
+    "remove": "Remove",
+    "close": "Close"
+  },
+  "filterPanel": {
+    "trigger": "Filters & Search",
+    "title": "Find Your Spot",
+    "description": "Search new locations or refine places in your current view.",
+    "searchNewLocation": "Search New Location",
+    "filterByName": "Filter by Name in Current View",
+    "sunShadeStatus": "Sun / Shade Status",
+    "noPlaces": "No places match your current filters in this map area.",
+    "unnamedPlace": "Unnamed Place",
+    "placeLabel": "Place",
+    "sun": "Sun",
+    "shade": "Shade",
+    "checking": "Checking..."
+  },
+  "placeDetails": {
+    "unnamedPlace": "Unnamed Place",
+    "placeDetails": "Place details",
+    "currently": "Currently:",
+    "checkingStatus": "Checking status...",
+    "inTheSun": "In the Sun",
+    "inTheShade": "In the Shade",
+    "address": "Address",
+    "cuisine": "Cuisine",
+    "moreInfo": "More Info",
+    "visitWebsite": "Visit Website",
+    "getDirections": "Get Directions",
+    "bookmarked": "Bookmarked",
+    "bookmark": "Bookmark"
+  },
+  "amenityNameSearch": {
+    "placeholder": "Search name in current view...",
+    "clear": "Clear name search"
+  },
+  "filterControls": {
+    "label": "Filter places by sun/shade",
+    "ariaLabel": "Filter by sun or shade",
+    "sunAria": "Show in sun",
+    "shadeAria": "Show in shade",
+    "allAria": "Show all",
+    "sun": "Sun",
+    "shade": "Shade",
+    "all": "All"
+  },
+  "locationSearch": {
+    "placeholder": "Search city or town...",
+    "clear": "Clear location search",
+    "searching": "Searching...",
+    "noResults": "No results found for"
+  },
+  "mapComponent": {
+    "unnamedPlace": "Unnamed Place",
+    "placeLabel": "Place",
+    "removedToast": "{{name}} removed from bookmarks.",
+    "addedToast": "{{name}} added to bookmarks!",
+    "removeBookmark": "Remove bookmark",
+    "addBookmark": "Add bookmark",
+    "cuisine": "Cuisine",
+    "address": "Address",
+    "currently": "Currently:",
+    "checking": "Checking...",
+    "inTheSun": "In the Sun",
+    "inTheShade": "In the Shade",
+    "viewMoreDetails": "View More Details"
+  },
+  "themeToggle": {
+    "toggle": "Toggle theme",
+    "light": "Light",
+    "dark": "Dark",
+    "system": "System"
+  },
+  "layout": {
+    "title": "In The Sun",
+    "description": "Find sunny or shady spots in your city."
+  },
+  "timeSlider": {
+    "buttonTitle": "Go to Live Time",
+    "title": "Live"
   }
 }
