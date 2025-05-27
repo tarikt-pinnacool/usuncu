@@ -17,6 +17,7 @@ import { Feature as GeoJsonFeature, Polygon as GeoJsonPolygon } from "geojson";
 import { useDebouncedCallback } from "use-debounce";
 import { toast } from "sonner";
 import { useTranslation } from "@/context/i18nContext";
+import { useTheme } from "next-themes";
 
 let L: typeof LType | undefined = undefined;
 
@@ -37,30 +38,61 @@ const MIN_ZOOM_FOR_SHADOWS = 16; // Define zoom threshold for showing shadows. A
 const createLeafletIcon = (options: IconOptions): LType.DivIcon | undefined => {
   if (!L) return undefined;
 
-  let baseColorClass = "text-slate-600 dark:text-slate-400"; // For unknown or default shade
-  let iconFillColor = "bg-white dark:bg-slate-700"; // Background of the circle
+  // Determine if current theme is light (assuming 'light' is the explicit value for light theme)
+  // This part depends on how you access the resolved theme.
+  // If `appTheme` is available here (passed as a prop or from a shared context/hook specifically for this function), use it.
+  // For simplicity in this snippet, I'll assume a way to get it. If not, we might need to pass it to createLeafletIcon.
+  // Let's assume `document.documentElement.classList.contains('dark')` can be a proxy if window is defined.
+  // However, it's better if the theme state is explicitly passed or accessible.
+
+  // For now, let's assume we can't easily get appTheme here without prop drilling.
+  // So we'll use Tailwind's dark: prefix as before, and focus on the non-dark (light mode) colors.
+
+  let baseColorClass: string; // For the SVG icon stroke/fill
+  let iconFillColor: string; // For the circular background of the marker
   let iconSvgPath = `<circle cx="12" cy="12" r="7" fill="currentColor" opacity="0.5"/> <circle cx="12" cy="12" r="3" fill="white"/>`; // Default dot
 
   if (options.type === "sun") {
-    baseColorClass = "text-orange-500 dark:text-orange-400";
-    iconFillColor = "bg-yellow-50 dark:bg-orange-900/50";
+    // LIGHT MODE SUN: Brighter, more vibrant
+    iconFillColor = "bg-amber-400 dark:bg-orange-900/60"; // Brighter amber for light, slightly more opaque dark
+    baseColorClass = "text-white dark:text-orange-300"; // White icon on amber, light orange on dark orange
+
+    // Dark mode SUN (can also be tweaked if needed)
+    // iconFillColor = "dark:bg-orange-500"; // Example: A more solid orange for dark mode background
+    // baseColorClass = "dark:text-orange-100";
+
     iconSvgPath = `<circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2"/><path d="M12 19.5v2"/><path d="m5.23 5.23 1.41 1.41"/><path d="m17.36 17.36 1.41 1.41"/><path d="M2.5 12h2"/><path d="M19.5 12h2"/><path d="m6.64 17.36-1.41 1.41"/><path d="m18.77 5.23-1.41 1.41"/>`;
   } else if (options.type === "shade") {
-    baseColorClass = "text-sky-600 dark:text-sky-400";
-    iconFillColor = "bg-sky-50 dark:bg-sky-900/50";
+    // LIGHT MODE SHADE: More distinct blue
+    iconFillColor = "bg-sky-500 dark:bg-sky-800/70"; // Vibrant sky blue for light, slightly more opaque dark
+    baseColorClass = "text-white dark:text-sky-300"; // White icon on sky blue
+
+    // Dark mode SHADE (can also be tweaked)
+    // iconFillColor = "dark:bg-blue-600";
+    // baseColorClass = "dark:text-blue-100";
+
     iconSvgPath = `<path d="M12 3a6.36 6.36 0 0 0 9 9 9 9 0 1 1-9-9Z"/>`;
+  } else {
+    // Unknown
+    // LIGHT MODE UNKNOWN: Clear neutral
+    iconFillColor = "bg-slate-200 dark:bg-slate-700"; // Light grey for light mode
+    baseColorClass = "text-slate-700 dark:text-slate-300"; // Darker grey icon for light mode
   }
 
   let iconSize = 28;
   let wrapperClasses = `custom-place-icon rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ease-in-out`;
-  let borderClasses = "border-2 border-transparent"; // Default no distinct border
+  let borderClasses = "border-2 border-transparent";
 
   if (options.isSelected) {
     iconSize = 36;
-    borderClasses = `border-4 border-primary dark:border-primary shadow-xl ring-2 ring-offset-1 ring-offset-background dark:ring-offset-background ring-primary/50`; // Prominent border/ring
-    // pulseAnimation = `animate-pulse`; // Add to wrapperClasses if desired
+    // Selected border can use primary color, which adapts to theme via CSS variables if set up in globals.css
+    // Or define explicitly:
+    borderClasses = `border-4 border-blue-600 dark:border-sky-400 shadow-xl ring-2 ring-offset-1 ring-offset-background dark:ring-offset-background ring-blue-600/50 dark:ring-sky-400/50`;
+    // Using Tailwind's primary color (if defined)
+    // borderClasses = `border-4 border-primary dark:border-primary shadow-xl ring-2 ring-offset-1 ring-offset-background dark:ring-offset-background ring-primary/50`;
   } else if (options.isBookmarked) {
-    borderClasses = `border-2 border-yellow-400 dark:border-yellow-500`;
+    // Bookmark border should also be vibrant
+    borderClasses = `border-2 border-pink-500 dark:border-pink-400`; // Example: Pink for bookmark
   }
 
   wrapperClasses += ` ${iconFillColor} ${borderClasses}`;
@@ -72,9 +104,9 @@ const createLeafletIcon = (options: IconOptions): LType.DivIcon | undefined => {
     options.isSelected ? "20" : "18"
   }"
            viewBox="0 0 24 24"
-           fill="none"
-           stroke="currentColor" <!-- Will be set by baseColorClass -->
-           class="${baseColorClass}"
+           fill="none" 
+           stroke="currentColor" 
+           class="${baseColorClass}" 
            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         ${iconSvgPath}
       </svg>
@@ -109,6 +141,7 @@ const createLeafletIcon = (options: IconOptions): LType.DivIcon | undefined => {
 const MapComponent = () => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<LType.Map | null>(null);
+  const tileLayerRef = useRef<LType.TileLayer | null>(null); // Ref for the tile layer
 
   const {
     mapCenter,
@@ -131,6 +164,7 @@ const MapComponent = () => {
     setIsBookmarkSheetOpen,
   } = useAppStore();
 
+  const { theme: appTheme } = useTheme(); // Get current theme from next-themes
   const sunPosition = useSunPosition(mapCenter.lat, mapCenter.lng);
   const [isLeafletLoaded, setIsLeafletLoaded] = useState(false);
   const [markerInstances, setMarkerInstances] = useState<
@@ -224,6 +258,47 @@ const MapComponent = () => {
     setMapCenterAndZoom,
   ]);
 
+  // Effect to UPDATE THE TILE LAYER based on theme (and on initial map load)
+  useEffect(() => {
+    if (!mapInstanceRef.current || !L || !isLeafletLoaded) return; // Ensure map and Leaflet are ready
+    const map = mapInstanceRef.current;
+
+    // Remove existing tile layer if it exists
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+      tileLayerRef.current = null;
+    }
+
+    const stadiaApiKey = process.env.NEXT_PUBLIC_STADIA_API_KEY;
+    let newTileUrl = "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"; // Fallback
+    let newAttribution =
+      '© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap contributors</a>';
+    let layerOptions: L.TileLayerOptions = {
+      attribution: newAttribution,
+      maxZoom: 19,
+    };
+
+    if (stadiaApiKey) {
+      if (appTheme === "dark") {
+        newTileUrl = `https://tiles.stadiamaps.com/tiles/alidade_smooth_dark/{z}/{x}/{y}{r}.png?api_key=${stadiaApiKey}`;
+      } else {
+        // Default to light theme if not 'dark' or theme is undefined initially
+        newTileUrl = `https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png?api_key=${stadiaApiKey}`;
+      }
+      newAttribution =
+        '© <a href="https://www.stadiamaps.com/" target="_blank" rel="noopener">Stadia Maps</a>, © <a href="https://openmaptiles.org/" target="_blank" rel="noopener">OpenMapTiles</a> © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OSM contributors</a>';
+      layerOptions = { attribution: newAttribution, maxZoom: 20 }; // Removed ext property
+    } else {
+      console.warn(
+        "Stadia Maps API key not found. Falling back to default OSM tiles."
+      );
+    }
+
+    const newLayer = L.tileLayer(newTileUrl, layerOptions);
+    newLayer.addTo(map);
+    tileLayerRef.current = newLayer;
+  }, [appTheme, isLeafletLoaded]); // Re-run when appTheme changes or Leaflet loads
+
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (map && isLeafletLoaded) {
@@ -234,7 +309,10 @@ const MapComponent = () => {
         currentMapCenter.lng.toFixed(5) !== mapCenter.lng.toFixed(5) ||
         currentMapZoom !== mapZoom
       ) {
-        map.flyTo([mapCenter.lat, mapCenter.lng], mapZoom);
+        map.flyTo([mapCenter.lat, mapCenter.lng], mapZoom, {
+          animate: true,
+          duration: 1.0, // Adjust duration for a nice flight
+        });
       }
     }
   }, [mapCenter, mapZoom, isLeafletLoaded]);
